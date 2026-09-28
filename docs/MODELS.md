@@ -1,15 +1,21 @@
 # Models and presets
 
-Choose a model profile at the top of Generation Engine, then choose the matching installed files under **Model files**. The initial adapters are deliberately specific; a preset changes settings, not the model architecture.
+Choose an installed file at the top of Generation Engine. The picker groups the running ComfyUI installation's files under **Checkpoints** and **Diffusion models**, including configured extra model paths and legacy `unet` folders. The list contains filenames, not architecture presets.
 
-| Profile | ComfyUI model folders and typical filenames |
+Open **Model files** below to choose **Architecture** and the matching text encoders and VAE. Checkpoints currently use the SDXL adapter and must include CLIP and VAE. Separate diffusion files use Krea 2 Turbo, Qwen Image or FLUX.1 Dev. Choose the architecture explicitly: the Engine does not infer it from a filename. A preset changes settings, not model support.
+
+Use **Refresh model list** after adding files. Missing saved selections stay visible so you can replace them; an empty list means ComfyUI has no files in that category.
+
+Choosing another file in the same category keeps your architecture, sampling settings, preset and supporting files. Switching categories restores that category's last architecture and saved settings, or its defaults. Changing **Architecture** within a category keeps the main filename and restores that architecture's encoder, VAE and settings selections. Confirm that the file matches the selected architecture before generating.
+
+| Architecture | ComfyUI model folders and typical filenames |
 | --- | --- |
 | Krea 2 Turbo | `diffusion_models/krea2_turbo_fp8.safetensors`, `text_encoders/qwen3vl_4b_fp8_scaled.safetensors`, `vae/wan_2.1_vae.safetensors` |
 | SDXL Checkpoint | A base SDXL checkpoint in `checkpoints`, including its CLIP and VAE |
 | Qwen Image | `diffusion_models/qwen_image_fp8_e4m3fn.safetensors`, `text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors`, `vae/qwen_image_vae.safetensors` |
 | FLUX.1 Dev | `diffusion_models/flux1-dev.safetensors`, `text_encoders/clip_l.safetensors`, `text_encoders/t5xxl_fp16.safetensors`, `vae/ae.safetensors` |
 
-These are selectable defaults, not included downloads. Different compatible filenames can be selected. Qwen Image Edit, FLUX.2, FLUX Schnell, SDXL Refiner, quantization extensions and video models are not covered by these adapters. The engine checks loaded model, text encoder and latent families before sampling. GPU output quality has not yet been verified for this release.
+These are example filenames, not included downloads. Select the compatible files you have installed. SD 1.x/2.x checkpoints, Qwen Image Edit, Qwen Image 2.1, FLUX Kontext, FLUX.2, FLUX Schnell, SDXL Refiner, quantization extensions and video models are not covered by these adapters. The engine checks loaded model, text encoder and latent families before sampling. Variants that share the same architecture cannot always be distinguished, so select a model covered by the chosen adapter. GPU output quality has not yet been verified for this release.
 
 ## Manual or DMAI Enhanced
 
@@ -41,11 +47,13 @@ The standalone node requires the separately installed, reviewed [Krea2T Enhancer
 
 ## Advanced connections
 
-Reveal advanced inputs using ComfyUI's native node controls.
+Drag ComfyUI's native output ports to matching input ports. The basic links are Prompter **request** → Engine **request**, LoRA Loader **loras** → Engine **loras**, Engine **images** → Gallery **images**, and optionally Engine **report** → Gallery **report**. These are workflow connections, separate from buttons inside the node panels.
+
+Reveal optional advanced inputs using ComfyUI's native node controls.
 
 | Input | Behavior |
 | --- | --- |
-| MODEL + CLIP + VAE | Supply all three together to bypass Engine's internal file loaders. The selected profile still validates their compatibility. |
+| MODEL + CLIP + VAE | Supply all three together to bypass Engine's internal file loaders. The selected Architecture still validates their compatibility; local file selections are not required for this path. |
 | SAMPLER | Use the connected sampler object. Engine calculates the schedule from its Steps, Scheduler and Denoise. |
 | SIGMAS | Supply the schedule tensor. This overrides Steps, Scheduler and Denoise. Engine still selects its own sampler unless SAMPLER is also connected. |
 | LATENT | Start from one encoded image matching Prompter dimensions. It is reused with a different seed for each requested output. Choose denoise below 1 for image-to-image. |

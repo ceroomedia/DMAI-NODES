@@ -1,4 +1,4 @@
-# Validation — 0.1.1 preview
+# Validation — 0.1.2 preview
 
 Checked on 2026-09-28. This release has working ComfyUI registration, CPU contract tests and real local API checks. GPU image generation is still pending.
 
@@ -7,7 +7,7 @@ Checked on 2026-09-28. This release has working ComfyUI registration, CPU contra
 - Windows, Python 3.12.11, CPU PyTorch 2.14.0.
 - ComfyUI v0.37.0, commit `73c9bad4d21e7addbe1d13bc92eee0f1431b017d`.
 - The tag's frontend package: 1.52.7.
-- A separate loopback-only installation, empty large-model folders and isolated output storage.
+- A separate loopback-only installation, tiny explicitly named QA inventory fixtures, no usable image models and isolated output storage.
 - No paid compute, Runpod start or model-weight download.
 
 ## Passed
@@ -15,7 +15,7 @@ Checked on 2026-09-28. This release has working ComfyUI registration, CPU contra
 | Check | Evidence |
 | --- | --- |
 | Python suite | 81 tests passed with optional real-Comfy CPU tests enabled, including scoped native progress registry updates and multi-image progress. |
-| JavaScript suite | 38 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment, Comfy change events, progress presentation and job lifecycle handling. |
+| JavaScript suite | 53 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment, Comfy change events, progress presentation, job lifecycle handling, native socket geometry and model-file selection. |
 | Node registration | All seven native V3 nodes appear in real `/object_info`. |
 | Runtime choices | Four model profiles, 45 native sampler names and 9 schedulers in the test installation. Extension installations can change these counts. |
 | LoRA loading | Four real CPU comparisons use tiny safetensors, Comfy's file loader, ModelPatcher and LoRA weight calculation. Results match the standard loader and expected low-rank math exactly. |
@@ -26,6 +26,8 @@ Checked on 2026-09-28. This release has working ComfyUI registration, CPU contra
 | Progress transport | A real `/prompt` job and WebSocket emitted `preparing` then `error` with the correct prompt and Engine IDs when the optional enhancer was absent. No completion event was fabricated. |
 | Progress lifecycle | Automated tests cover cached jobs, subgraph identity, multiple Engine branches, queued-job removal, failure, cancellation, disconnect and cleanup. Only native workflow success reaches 100%. |
 | Progress browser check | Generate appears only in Prompter. A real Comfy execution failure re-enabled it and showed the actionable error. The production component harness displayed a 42% perimeter, disabled Generate while active, and restored it at 100% completion using explicitly labeled fixture states. |
+| Native connections | Reproduced the old failure: dragging the visible edge socket panned the canvas. After repair, mouse drags created Prompter→Engine, LoRA→Engine, Engine IMAGE→Gallery and Engine REPORT→Gallery links. Dragging from the advanced SAMPLER input opened Comfy's compatible-node search and connected native KSamplerSelect. All five links survived save and reload. |
+| Model picker | Real Comfy inventories supplied one checkpoint, two diffusion files (including a nested path), one encoder and one VAE fixture. The top selector exposed both groups. Switching checkpoint/diffusion source, explicitly choosing Qwen architecture, and saving/reloading preserved the exact file paths and supporting selections. Removing/reselecting a VAE updated the missing-file message immediately without closing Model files. No fixture is a usable generation model. |
 | Browser | Production panels render in real Comfy Canvas. Custom dimensions, image count, Manual/Enhanced round trips and native sampler/scheduler menus were exercised. Saving and reloading retained 1152×768, count 2, 22 steps, DPM++ 2M and Karras. Reordering retained LoRA model strength 0.65 and independent CLIP strength 0.4. Comfy's unsaved marker and Undo respond to edits. Two non-adjacent Gallery images could be selected. |
 
 The visual Gallery fixtures are solid-color test images, not generated model results.

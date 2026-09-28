@@ -5,7 +5,6 @@ import {
   input,
   select,
   details,
-  options,
   saveBlob,
   statusMessage,
 } from "./dom.mjs";
@@ -17,6 +16,14 @@ import {
   envelope,
   uid,
 } from "./core.mjs";
+import {
+  modelSource,
+  modelGroups,
+  selectedModel,
+  parseModelToken,
+  profileForSource,
+  inventoryName,
+} from "./model-picker.mjs";
 
 export class Engine extends Controller {
   constructor(node, context) {
@@ -97,6 +104,12 @@ export class Engine extends Controller {
       settings: this.value.settings,
       models: this.value.models,
     });
+    const source = modelSource(this.profile());
+    if (source) this.lastProfiles()[source.key] = this.value.profile_id;
+  }
+  lastProfiles() {
+    this.node.properties ??= {};
+    return (this.node.properties.dmai_model_profiles ??= {});
   }
   manualDrafts() {
     this.node.properties ??= {};
@@ -127,13 +140,15 @@ export class Engine extends Controller {
     this.persist();
     this.build();
   }
-  changeProfile(id) {
-    if (!this.commitControls()) return;
+  changeProfile(id, selection) {
+    if (!this.commitControls()) return false;
+    const previousSource = modelSource(this.profile());
+    const previousFile = previousSource && this.value.models[previousSource.key];
     this.remember();
     if (this.value.mode === "manual")
       this.manualDrafts()[this.value.profile_id] = clone(this.value.settings);
     const profile = this.data.profiles.find((p) => p.id === id);
-    if (!profile) return;
+    if (!profile) return false;
     const saved = this.drafts()[id],
       preset = this.presets().find((p) => p.model.id === id),
       models = {
@@ -158,29 +173,85 @@ export class Engine extends Controller {
             models,
           },
     );
+    const source = modelSource(profile);
+    // Architecture changes keep the chosen model file. Crossing categories
+    // restores that architecture's encoder/VAE and sampling settings instead.
+    if (selection && source?.key === selection.key)
+      this.value.models[source.key] = selection.name;
+    else if (source?.key === previousSource?.key && previousFile)
+      this.value.models[source.key] = previousFile;
+    if (source) this.lastProfiles()[source.key] = id;
     this.persist();
     this.build();
+    return true;
+  }
+  chooseModel(selection) {
+    if (!this.commitControls()) return false;
+    const profile = profileForSource(
+      this.data.profiles, selection.key, this.value.profile_id, this.lastProfiles(),
+    );
+    if (!profile) {
+      this.error(new Error("No installed architecture adapter supports this model category."));
+      return false;
+    }
+    if (profile.id !== this.value.profile_id)
+      return this.changeProfile(profile.id, selection);
+    this.value.models[selection.key] = selection.name;
+    this.persist();
+    this.build();
+    return true;
+  }
+  changeModelFile(key, name) {
+    if (!this.commitControls()) return false;
+    this.value.models[key] = name;
+    this.persist();
+    this.build();
+    return true;
+  }
+  modelPicker(profile) {
+    const groups = modelGroups(this.data?.models);
+    const selected = selectedModel(profile, this.value.models, this.data?.models);
+    const hasFiles = groups.some((group) => group.items.length);
+    const picker = select("Model", [{ value: "", label: !this.data
+      ? "Loading installed models…"
+      : hasFiles ? "Choose an installed model" : "No installed models found" }], "");
+    picker.field.classList.add("dmai-model");
+    for (const group of groups) {
+      if (!group.items.length) continue;
+      const element = el("optgroup");
+      element.label = group.label;
+      for (const item of group.items)
+        element.append(new Option(item.label, item.value));
+      picker.control.append(element);
+    }
+    if (selected && !selected.available)
+      picker.control.append(new Option(`${selected.name} · unavailable`, selected.value));
+    picker.control.value = selected?.value ?? "";
+    picker.control.disabled = !this.data || ["model", "clip", "vae"].every((name) => this.linked(name));
+    picker.control.addEventListener("change", () => {
+      if (!picker.control.value) {
+        if (this.commitControls()) {
+          const source = modelSource(this.profile());
+          if (source) this.value.models[source.key] = "";
+          this.persist();
+          this.build();
+        }
+      } else this.chooseModel(parseModelToken(picker.control.value));
+      picker.control.value = selectedModel(this.profile(), this.value.models, this.data?.models)?.value ?? "";
+    });
+    return picker.field;
   }
   build() {
+    this.modelFilesExpanded = this.modelFilesDetails?.open ?? this.modelFilesExpanded;
     this.body.replaceChildren();
     this.commitManual = null;
     this.commitSeed = null;
     const profile = this.profile(),
       s = this.effective();
-    const profileSelect = select(
-      "Model",
-      this.data?.profiles?.map((p) => ({ value: p.id, label: p.label })) ?? [
-        { value: this.value.profile_id, label: "Loading model profiles…" },
-      ],
-      this.value.profile_id,
-    );
-    profileSelect.field.classList.add("dmai-model");
-    profileSelect.control.disabled = !this.data;
-    profileSelect.control.addEventListener("change", () => {
-      this.changeProfile(profileSelect.control.value);
-      profileSelect.control.value = this.value.profile_id;
-    });
-    this.body.append(profileSelect.field);
+    this.body.append(this.modelPicker(profile));
+    if (["model", "clip", "vae"].every((name) => this.linked(name)))
+      this.body.append(el("div", "dmai-badge", "Connected model · CLIP · VAE"));
+    this.modelFiles(profile);
     const mode = el("div", "dmai-segmented dmai-mode");
     for (const [value, label, glyph] of [
       ["enhanced", "DMAI Enhanced", "spark"],
@@ -318,7 +389,32 @@ export class Engine extends Controller {
       }),
     );
     this.body.append(seedRow);
+    if (this.data && !profile)
+      this.error(
+        new Error(
+          "This model profile is not installed. Choose a supported architecture.",
+        ),
+      );
+  }
+  modelFiles(profile) {
     const advanced = details("Model files");
+    this.modelFilesDetails = advanced.root;
+    advanced.root.open = Boolean(this.modelFilesExpanded);
+    const source = modelSource(profile);
+    const architectures = this.data?.profiles;
+    const architecture = select(
+      "Architecture",
+      architectures?.map((candidate) => ({ value: candidate.id, label: candidate.label })) ?? [
+        { value: this.value.profile_id, label: "Loading architectures…" },
+      ],
+      this.value.profile_id,
+    );
+    architecture.control.disabled = !this.data;
+    architecture.control.addEventListener("change", () => {
+      this.changeProfile(architecture.control.value);
+      architecture.control.value = this.value.profile_id;
+    });
+    advanced.body.append(architecture.field);
     const externalModels = ["model", "clip", "vae"].every((name) =>
       this.linked(name),
     );
@@ -328,6 +424,7 @@ export class Engine extends Controller {
       );
     else if (profile) {
       for (const f of profile.model_fields) {
+        if (f.key === source?.key) continue;
         const list = this.data.models[f.inventory] ?? [],
           picker = select(
             f.label,
@@ -335,20 +432,18 @@ export class Engine extends Controller {
               { value: "", label: "Choose an installed file" },
               ...list.map((name) => ({ value: name, label: name })),
             ],
-            this.value.models[f.key],
+            inventoryName(list, this.value.models[f.key]) ?? this.value.models[f.key],
           );
         picker.control.addEventListener("change", () => {
-          this.value.models[f.key] = picker.control.value;
-          this.persist();
+          if (!this.changeModelFile(f.key, picker.control.value))
+            picker.control.value = inventoryName(list, this.value.models[f.key]) ?? this.value.models[f.key];
         });
         advanced.body.append(picker.field);
       }
       const missing = profile.model_fields.filter(
         (f) =>
           f.required &&
-          !(this.data.models[f.inventory] ?? []).includes(
-            this.value.models[f.key],
-          ),
+          inventoryName(this.data.models[f.inventory], this.value.models[f.key]) === undefined,
       );
       if (missing.length) {
         advanced.root.open = true;
@@ -400,12 +495,6 @@ export class Engine extends Controller {
         ),
       );
     this.body.append(advanced.root);
-    if (this.data && !profile)
-      this.error(
-        new Error(
-          "This model profile is not installed. Choose a supported profile.",
-        ),
-      );
   }
   manual(settings, profile) {
     const grid = el("div", "dmai-settings");

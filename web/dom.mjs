@@ -1,4 +1,34 @@
 import { icon } from "./icons.mjs";
+
+// Comfy's DOM wrapper receives pointer events across its whole rectangle. A
+// real widget margin leaves canvas space for native socket hit targets; CSS
+// padding on the panel alone would still leave the wrapper over the sockets.
+export const SOCKET_GUTTER = 22;
+export const SOCKET_INSET = 12;
+
+export function layoutNativeSockets(node) {
+  const width = node.size?.[0] ?? 360;
+  const height = node.size?.[1] ?? 400;
+  for (const [slots, x] of [
+    [node.inputs ?? [], SOCKET_INSET],
+    [node.outputs ?? [], width - SOCKET_INSET],
+  ]) {
+    // Widget-backed inputs keep Comfy's own conversion, visibility and layout.
+    // In particular, our hidden JSON widgets must not consume a socket row.
+    const sockets = slots.filter((slot) => !slot.widget);
+    const top = 75;
+    const bottom = Math.max(top, height - 40);
+    sockets.forEach((slot, index) => {
+      const y = Math.round(
+        sockets.length === 1
+          ? (top + bottom) / 2
+          : top + ((bottom - top) * index) / (sockets.length - 1),
+      );
+      if (slot.pos?.[0] !== x || slot.pos?.[1] !== y) slot.pos = [x, y];
+    });
+  }
+}
+
 export const el = (tag, className = "", text) => {
   const element = document.createElement(tag);
   element.className = className;
@@ -142,15 +172,16 @@ export class Controller {
       {
         serialize: false,
         hideOnZoom: false,
-        getMinHeight: () => this.minHeight ?? 300,
+        getMinHeight: () => (this.minHeight ?? 300) + SOCKET_GUTTER * 2,
         getMaxHeight: () => Infinity,
         getHeight: () => this.height ?? "100%",
-        margin: 0,
+        margin: SOCKET_GUTTER,
       },
     );
     this.widget.serialize = false;
     this.wrap("onConfigure", () => queueMicrotask(() => this.hydrate()));
     this.wrap("onDrawBackground", () => this.positionSlots());
+    this.wrap("onResize", () => this.positionSlots());
     this.wrap("onRemoved", () => this.dispose());
     const oldRemove = this.widget.onRemove?.bind(this.widget);
     this.widget.onRemove = (...args) => {
@@ -178,38 +209,13 @@ export class Controller {
   size(width, height) {
     this.minHeight = height;
     this.node.setSize?.([
-      Math.max(width, this.node.size?.[0] ?? 0),
-      Math.max(height + 20, this.node.size?.[1] ?? 0),
+      Math.max(width + SOCKET_GUTTER * 2, this.node.size?.[0] ?? 0),
+      Math.max(height + SOCKET_GUTTER * 2 + 4, this.node.size?.[1] ?? 0),
     ]);
     this.positionSlots();
   }
   positionSlots() {
-    const width = this.node.size?.[0] ?? 360,
-      height = this.node.size?.[1] ?? 400;
-    for (const [slots, x] of [
-      [this.node.inputs ?? [], 0],
-      [this.node.outputs ?? [], width],
-    ]) {
-      const visible = slots.filter(
-        (slot) =>
-          !slot.advanced ||
-          this.node.showAdvanced ||
-          slot.link != null ||
-          slot.links?.length,
-      );
-      visible.forEach((slot, index) => {
-        const y = Math.round(
-          Math.max(
-            75,
-            Math.min(
-              height - 28,
-              (height * (index + 1)) / (visible.length + 1),
-            ),
-          ),
-        );
-        if (slot.pos?.[0] !== x || slot.pos?.[1] !== y) slot.pos = [x, y];
-      });
-    }
+    layoutNativeSockets(this.node);
   }
   set(value) {
     const serialized =

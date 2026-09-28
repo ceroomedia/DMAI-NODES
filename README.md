@@ -14,7 +14,7 @@ tags:
 
 **A compact image workflow for ComfyUI.** Slate surfaces, clean Inter typography and English controls.
 
-**0.1.1 preview** · [GitHub releases](https://github.com/ceroomedia/DMAI-NODES/releases) · [Hugging Face download mirror](https://huggingface.co/ceroomedia/DMAI-NODES)
+**0.1.2 preview** · [GitHub releases](https://github.com/ceroomedia/DMAI-NODES/releases) · [Hugging Face download mirror](https://huggingface.co/ceroomedia/DMAI-NODES)
 
 Prompter → Generation Engine → Gallery, with an ordered LoRA Loader feeding the engine.
 
@@ -24,7 +24,7 @@ Prompter → Generation Engine → Gallery, with an ordered LoRA Loader feeding 
 | --- | --- |
 | **DMAI Prompter** | Prompt, 19 aspect ratios, 1K / 2K / Custom dimensions, image count, Generate button and generation progress outline. |
 | **DMAI LoRA Loader** | Reorderable stack, enabled state, separate model/CLIP strengths and strict file checks. |
-| **DMAI Generation Engine** | Model profiles, DMAI Enhanced or Manual sampling, imported settings presets, seed sequence and execution report. |
+| **DMAI Generation Engine** | Installed checkpoint and diffusion model picker, DMAI Enhanced or Manual sampling, imported settings presets, seed sequence and execution report. |
 | **DMAI Gallery** | Persistent PNG originals, multiple selection, per-image download and selection ZIP. |
 | **DMAI Krea Enhancer** | A standalone Krea-only model node, using the optional upstream Krea2T Enhancer. |
 | **DMAI VAE Encode / Decode** | Standard Comfy VAE operations, usable separately and with the engine's advanced inputs. |
@@ -54,11 +54,13 @@ ZIP installation is also supported: extract the release so `ComfyUI/custom_nodes
 ## First workflow
 
 1. Import a starter from `workflows`: Krea, SDXL, Qwen or FLUX. Use the `.json` file for the UI and `.api.json` for API calls.
-2. Select installed model files in the Engine. Install any optional enhancement dependency needed by the selected preset.
+2. Select an installed file at the top of Engine under **Checkpoints** or **Diffusion models**. Open **Model files** to set its **Architecture** and any separate text encoders and VAE. Checkpoint loading currently supports SDXL; diffusion loading supports Krea 2 Turbo, Qwen Image and FLUX.1 Dev. Install any optional enhancement dependency needed by the selected preset.
 3. Enter the prompt and image count. Add LoRAs if needed.
 4. Choose **Generate** in the Prompter. Its softly glowing outline follows generation across all requested images and reaches 100% when the workflow finishes. Preview or download saved results from Gallery.
 
 For Krea without the optional enhancer, choose **Krea / Clean Base** or Manual with Enhancer set to `none`. Models and LoRAs remain subject to their own licenses.
+
+To wire nodes yourself, drag the native output port to a matching input port: Prompter **request** → Engine **request**, LoRA Loader **loras** → Engine **loras**, and Engine **images** → Gallery **images**. Engine **report** → Gallery **report** adds generation metadata. Use ComfyUI's native node controls to reveal optional advanced inputs; see [advanced connections](docs/MODELS.md#advanced-connections).
 
 ## Behavior that matters
 

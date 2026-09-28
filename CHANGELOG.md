@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — 2026-09-28
+
+- Fixed native socket dragging: DOM panels leave real canvas gutters around input and output hit targets. Hidden JSON widgets no longer affect socket spacing.
+- The Engine's top Model selector lists installed files under Checkpoints and Diffusion models. Architecture, text encoders and VAE are in Model files directly underneath.
+- Preserve exact filenames, missing selections and architecture-specific settings; refresh missing-file messages when encoder or VAE selections change.
+
 ## 0.1.1 — 2026-09-28
 
 - Move Generate from the Generation Engine to the Prompter.
