@@ -1,0 +1,64 @@
+name: Tests and release archive
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Contract tests / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      # Real ComfyUI/tensor comparisons remain explicitly opt-in.
+      DMAI_RUN_COMFY_TESTS: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install lightweight Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Python contract tests
+        run: python -m unittest discover -s tests -v
+      - name: JavaScript contract tests
+        run: npm test
+
+  archive:
+    name: Build curated installable archive
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - name: Build allowlisted release and verify ZIP CRC
+        run: python tools/build_release.py
+      - name: Upload reviewable build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: DMAI-NODES-installable
+          path: |
+            dist/DMAI-NODES-v*.zip
+            dist/DMAI-NODES-v*.zip.sha256
+          if-no-files-found: error
+          retention-days: 14

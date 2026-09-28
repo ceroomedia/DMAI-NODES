@@ -1,0 +1,12 @@
+{
+  "name": "DMAI NODES",
+  "version": "0.1.0",
+  "channel": "preview",
+  "license": "MIT",
+  "comfyui_reference": "0.37.0",
+  "frontend_reference": "1.52.7",
+  "nodes": ["DMAIPrompter", "DMAILoRAStack", "DMAIGenerationEngine", "DMAIGallery", "DMAIKreaEnhancer", "DMAIVAEEncode", "DMAIVAEDecode"],
+  "model_profiles": ["krea2-turbo", "sdxl-checkpoint", "qwen-image", "flux1-dev"],
+  "contains_model_weights": false,
+  "gpu_inference_verified": false
+}

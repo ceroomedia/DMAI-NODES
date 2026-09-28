@@ -1,0 +1,42 @@
+{
+  "1": {
+    "class_type": "DMAIPrompter",
+    "inputs": {
+      "config_json": "{\"schema_version\": 1, \"prompt\": \"A sculptural object made of dark stone and translucent green glass, soft studio side light.\", \"negative_prompt\": \"\", \"width\": 832, \"height\": 1024, \"count\": 1}"
+    }
+  },
+  "2": {
+    "class_type": "DMAILoRAStack",
+    "inputs": {
+      "manifest_json": "{\"schema_version\": 1, \"entries\": []}"
+    }
+  },
+  "3": {
+    "class_type": "DMAIGenerationEngine",
+    "inputs": {
+      "request": [
+        "1",
+        0
+      ],
+      "loras": [
+        "2",
+        0
+      ],
+      "config_json": "{\"schema_version\": 1, \"profile_id\": \"flux1-dev\", \"mode\": \"manual\", \"preset_id\": \"\", \"settings\": {\"steps\": 20, \"cfg\": 1, \"sampler\": \"euler\", \"scheduler\": \"simple\", \"denoise\": 1, \"enhancer\": \"none\"}, \"seed\": 481516, \"models\": {\"diffusion_model\": \"flux1-dev.safetensors\", \"text_encoder\": \"clip_l.safetensors\", \"vae\": \"ae.safetensors\", \"checkpoint\": \"\", \"text_encoder_2\": \"t5xxl_fp16.safetensors\"}, \"presets\": []}"
+    }
+  },
+  "4": {
+    "class_type": "DMAIGallery",
+    "inputs": {
+      "images": [
+        "3",
+        0
+      ],
+      "report": [
+        "3",
+        1
+      ],
+      "gallery_id": "dmai-flux-starter"
+    }
+  }
+}

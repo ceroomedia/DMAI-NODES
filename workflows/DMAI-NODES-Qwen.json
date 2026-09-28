@@ -1,0 +1,254 @@
+{
+  "last_node_id": 4,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "DMAIPrompter",
+      "pos": [
+        40,
+        100
+      ],
+      "size": [
+        410,
+        475
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "request",
+          "type": "DMAI_PROMPT",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DMAIPrompter"
+      },
+      "widgets_values": [
+        "{\"schema_version\": 1, \"prompt\": \"A sculptural object made of dark stone and translucent green glass, soft studio side light.\", \"negative_prompt\": \"\", \"width\": 832, \"height\": 1024, \"count\": 1}"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "DMAILoRAStack",
+      "pos": [
+        40,
+        660
+      ],
+      "size": [
+        410,
+        380
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "loras",
+          "type": "DMAI_LORA_STACK",
+          "links": [
+            2
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DMAILoRAStack"
+      },
+      "widgets_values": [
+        "{\"schema_version\": 1, \"entries\": []}"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "DMAIGenerationEngine",
+      "pos": [
+        570,
+        220
+      ],
+      "size": [
+        420,
+        700
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "request",
+          "type": "DMAI_PROMPT",
+          "link": 1
+        },
+        {
+          "name": "loras",
+          "type": "DMAI_LORA_STACK",
+          "link": 2
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": null
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": null
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": null
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "report",
+          "type": "DMAI_REPORT",
+          "links": [
+            4
+          ],
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DMAIGenerationEngine"
+      },
+      "widgets_values": [
+        "{\"schema_version\": 1, \"profile_id\": \"qwen-image\", \"mode\": \"manual\", \"preset_id\": \"\", \"settings\": {\"steps\": 20, \"cfg\": 4, \"sampler\": \"euler\", \"scheduler\": \"simple\", \"denoise\": 1, \"enhancer\": \"none\"}, \"seed\": 481516, \"models\": {\"diffusion_model\": \"qwen_image_fp8_e4m3fn.safetensors\", \"text_encoder\": \"qwen_2.5_vl_7b_fp8_scaled.safetensors\", \"vae\": \"qwen_image_vae.safetensors\", \"checkpoint\": \"\"}, \"presets\": []}"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "DMAIGallery",
+      "pos": [
+        1100,
+        180
+      ],
+      "size": [
+        500,
+        720
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "report",
+          "type": "DMAI_REPORT",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DMAIGallery"
+      },
+      "widgets_values": [
+        "dmai-qwen-starter"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      3,
+      0,
+      "DMAI_PROMPT"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      1,
+      "DMAI_LORA_STACK"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      3,
+      1,
+      4,
+      1,
+      "DMAI_REPORT"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7,
+      "offset": [
+        45,
+        20
+      ]
+    }
+  },
+  "version": 0.4
+}

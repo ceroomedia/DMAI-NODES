@@ -1,0 +1,67 @@
+import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
+import { envelope } from "./core.mjs";
+import { Prompter, LoRAStack } from "./inputs.mjs";
+import { Engine } from "./engine.mjs";
+import { Gallery } from "./gallery.mjs";
+
+const controllers = new WeakMap();
+const types = {
+  DMAIPrompter: Prompter,
+  DMAILoRAStack: LoRAStack,
+  DMAIGenerationEngine: Engine,
+  DMAIGallery: Gallery,
+};
+let bootstrapPromise;
+const context = {
+  api,
+  isConfiguring: () => Boolean(app.configuringGraph),
+  beforeChange: () => app.canvas?.emitBeforeChange?.(),
+  afterChange: () => app.canvas?.emitAfterChange?.(),
+  queue: () => app.queuePrompt(0, 1),
+  bootstrap(refresh = false) {
+    if (refresh || !bootstrapPromise)
+      bootstrapPromise = envelope(api, "/bootstrap").catch((error) => {
+        bootstrapPromise = null;
+        throw error;
+      });
+    return bootstrapPromise;
+  },
+};
+function install(node) {
+  const Class = types[node.comfyClass ?? node.type];
+  if (
+    !Class ||
+    controllers.has(node) ||
+    typeof node.addDOMWidget !== "function"
+  )
+    return;
+  try {
+    controllers.set(node, new Class(node, context));
+  } catch (error) {
+    console.error("DMAI NODES could not initialize", error);
+  }
+}
+function refreshGraph() {
+  for (const node of app.graph?._nodes ?? []) {
+    install(node);
+    controllers.get(node)?.hydrate();
+  }
+}
+app.registerExtension({
+  name: "DMAI.Nodes.Slate",
+  setup() {
+    const href = new URL("./nodes.css", import.meta.url).href;
+    if (!document.querySelector("link[data-dmai-nodes]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = href;
+      link.dataset.dmaiNodes = "";
+      document.head.append(link);
+    }
+  },
+  nodeCreated: install,
+  loadedGraphNode: install,
+  afterConfigureGraph: refreshGraph,
+  // Every visible socket is the real Comfy socket. No duplicate connection UI.
+});

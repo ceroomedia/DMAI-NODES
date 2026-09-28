@@ -1,0 +1,16 @@
+[project]
+name = "dmai-nodes"
+version = "0.1.0"
+description = "Compact image workflows for ComfyUI: Prompter, ordered LoRAs, Generation Engine and Gallery."
+authors = [{name = "DMAI / ceroomedia"}]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+dependencies = ["numpy>=1.24", "Pillow>=10", "aiohttp>=3.9"]
+
+[project.urls]
+Repository = "https://github.com/ceroomedia/DMAI-NODES"
+Issues = "https://github.com/ceroomedia/DMAI-NODES/issues"
+
+[tool.comfy]
+DisplayName = "DMAI NODES"

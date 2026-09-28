@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "presets": [
+    {
+      "schema_version": 1,
+      "id": "dmai-krea2-original-v1",
+      "name": "Krea / Original",
+      "model": {"id": "krea2-turbo", "label": "Krea 2 Turbo", "family": "krea2"},
+      "settings": {"steps": 8, "cfg": 1.1, "sampler": "euler", "scheduler": "beta", "denoise": 1, "enhancer": "krea2t"}
+    },
+    {
+      "schema_version": 1,
+      "id": "dmai-krea2-clean-v1",
+      "name": "Krea / Clean Base",
+      "model": {"id": "krea2-turbo", "label": "Krea 2 Turbo", "family": "krea2"},
+      "settings": {"steps": 8, "cfg": 1.1, "sampler": "euler", "scheduler": "beta", "denoise": 1, "enhancer": "none"}
+    },
+    {
+      "schema_version": 1,
+      "id": "dmai-sdxl-base-v1",
+      "name": "SDXL / Base",
+      "model": {"id": "sdxl-checkpoint", "label": "SDXL Checkpoint", "family": "sdxl"},
+      "settings": {"steps": 20, "cfg": 7, "sampler": "euler", "scheduler": "normal", "denoise": 1, "enhancer": "none"}
+    },
+    {
+      "schema_version": 1,
+      "id": "dmai-qwen-image-base-v1",
+      "name": "Qwen / Base",
+      "model": {"id": "qwen-image", "label": "Qwen Image", "family": "qwen_image"},
+      "settings": {"steps": 20, "cfg": 4, "sampler": "euler", "scheduler": "simple", "denoise": 1, "enhancer": "none"}
+    },
+    {
+      "schema_version": 1,
+      "id": "dmai-flux1-base-v1",
+      "name": "FLUX / Base",
+      "model": {"id": "flux1-dev", "label": "FLUX.1 Dev", "family": "flux"},
+      "settings": {"steps": 20, "cfg": 1, "sampler": "euler", "scheduler": "simple", "denoise": 1, "enhancer": "none"}
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+dist/
+.validation/
+test-results/
+playwright-report/
+.env*
+!.env.example
+*.safetensors
+*.ckpt
+*.pt
+*.sqlite*
+*.db
+*.key
+*.pem
+.DS_Store
+# Internal build coordination, not part of the public package.
+/IMPLEMENTATION.md

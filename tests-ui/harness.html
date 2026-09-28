@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DMAI NODES · component QA</title>
+    <link rel="stylesheet" href="../web/nodes.css" />
+    <style>
+      body {
+        margin: 0;
+        background: #101311;
+        color: #ecf0e9;
+        font:
+          13px "DMAI Inter",
+          sans-serif;
+      }
+      header.qa {
+        padding: 24px 32px;
+        border-bottom: 1px solid #333d35;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .qa button {
+        padding: 8px 12px;
+        background: #202522;
+        color: #c8ee99;
+        border: 1px solid #333d35;
+        border-radius: 7px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(
+            380px,
+            1.3fr
+          );
+        gap: 24px;
+        align-items: start;
+        max-width: 1380px;
+        margin: auto;
+        padding: 35px 24px;
+      }
+      .stack {
+        display: grid;
+        gap: 24px;
+      }
+      .dmai-panel {
+        height: auto;
+      }
+      .evidence {
+        padding: 16px 32px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        color: #a3ada5;
+      }
+      @media (max-width: 1050px) {
+        .layout {
+          grid-template-columns: 1fr 1fr;
+        }
+        .gallery-host {
+          grid-column: 1/-1;
+        }
+      }
+      @media (max-width: 650px) {
+        .layout {
+          grid-template-columns: 1fr;
+          padding: 20px 14px;
+        }
+        .gallery-host {
+          grid-column: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="qa">
+      <strong>DMAI NODES / component QA</strong
+      ><span>Production components · fixture transport · no generation</span
+      ><button id="restore">Serialize & restore</button
+      ><button id="external">External JSON values</button
+      ><button id="error">Invalid saved JSON</button>
+    </header>
+    <main class="layout">
+      <div class="stack">
+        <div id="prompter"></div>
+        <div id="lora"></div>
+      </div>
+      <div id="engine"></div>
+      <div id="gallery" class="gallery-host"></div>
+    </main>
+    <pre class="evidence" id="evidence" role="status"></pre>
+    <script type="module" src="./harness.mjs"></script>
+  </body>
+</html>

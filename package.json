@@ -1,0 +1,16 @@
+{
+  "name": "dmai-nodes",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend checks for DMAI NODES, a ComfyUI custom-node package.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests-js/*.test.mjs",
+    "test:python": "python -m unittest discover -s tests -v",
+    "build:release": "python tools/build_release.py"
+  }
+}
