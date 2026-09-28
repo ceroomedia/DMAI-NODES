@@ -310,7 +310,18 @@ def _prepare_input_latent(latent, model, request):
 
 
 def execute_engine(request, config, loras=None, *, sampler=None, sigmas=None,
-                   model=None, clip=None, vae=None, latent=None, positive=None, negative=None):
+                   model=None, clip=None, vae=None, latent=None, positive=None, negative=None,
+                   node_id=None):
+    from .progress import GenerationProgress
+    with GenerationProgress.from_comfy(node_id) as progress:
+        return _execute_engine(request, config, loras, sampler=sampler, sigmas=sigmas,
+                               model=model, clip=clip, vae=vae, latent=latent,
+                               positive=positive, negative=negative, progress=progress)
+
+
+def _execute_engine(request, config, loras=None, *, sampler=None, sigmas=None,
+                    model=None, clip=None, vae=None, latent=None, positive=None, negative=None,
+                    progress):
     """Render one image per seed, in order. Comfy interruptions propagate unchanged.
 
     The first public adapter uses standard EmptyLatentImage and KSampler. The
@@ -322,6 +333,7 @@ def execute_engine(request, config, loras=None, *, sampler=None, sigmas=None,
     from . import __version__ as package_version
     profile = get_profile(config["profile_id"])
     settings = config["settings"]
+    progress.configure(request["count"], settings["steps"])
     external_models = _external_model_inputs(model, clip, vae)
     if (positive is None) != (negative is None):
         raise ValueError("Connect positive and negative CONDITIONING together, or leave both disconnected.")
@@ -374,6 +386,7 @@ def execute_engine(request, config, loras=None, *, sampler=None, sigmas=None,
             from comfy_extras.nodes_custom_sampler import BasicScheduler
             sigmas = BasicScheduler.execute(model=model, scheduler=settings["scheduler"], steps=settings["steps"], denoise=settings["denoise"])[0]
             schedule = _sigma_schedule(sigmas)
+        progress.set_steps(schedule["steps"])
     # Both prompts must use the LoRA-patched encoder, in the same order as MODEL.
     if not external_conditioning:
         positive = _conditioning(nodes, profile, clip, request["prompt"], request)
@@ -389,6 +402,7 @@ def execute_engine(request, config, loras=None, *, sampler=None, sigmas=None,
             image_latent = nodes.EmptyLatentImage().generate(request["width"], request["height"], batch_size=1)[0]
         else:
             image_latent = {key: value.clone() if torch.is_tensor(value) else deepcopy(value) for key, value in prepared_latent.items()}
+        progress.begin_sampling(index)
         if not custom_sampling:
             samples = nodes.KSampler().sample(model=model, seed=image_seed, steps=settings["steps"], cfg=settings["cfg"],
                                              sampler_name=settings["sampler"], scheduler=settings["scheduler"],
@@ -400,11 +414,13 @@ def execute_engine(request, config, loras=None, *, sampler=None, sigmas=None,
                                            latent_image=image_latent)
             samples = result[0]
         interrupt()
+        progress.begin_decode()
         decoded = nodes.VAEDecode().decode(vae, samples)[0]
         if tuple(decoded.shape) != (1, request["height"], request["width"], 3):
             raise RuntimeError("The model returned unexpected image dimensions or count; generation stopped.")
         images.append(decoded.to(device="cpu"))
         image_report.append({"index": index, "seed": str(image_seed)})
+        progress.image_done()
     interrupt()
     preset_info = None
     if config["mode"] == "enhanced":

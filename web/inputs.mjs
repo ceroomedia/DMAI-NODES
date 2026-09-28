@@ -15,12 +15,22 @@ import {
   moveEntry,
   uid,
 } from "./core.mjs";
+import { ProgressView, progressPresentation } from "./progress-view.mjs";
 
 export class Prompter extends Controller {
   constructor(node, context) {
     super(node, "config_json", "Prompter", "text", context);
-    this.size(360, 350);
+    this.root.classList.add("dmai-prompter");
+    const scroll = el("div", "dmai-prompter-scroll");
+    scroll.append(...this.root.childNodes);
+    this.root.append(scroll);
+    this.progress = { phase: "idle", percent: 0 };
+    this.progressView = new ProgressView(this.root);
+    this.size(360, 400);
     this.hydrate();
+    this.stopProgress = context.watchProgress?.(node, (state) => {
+      if (!this.disposed) this.updateProgress(state);
+    });
   }
   hydrate() {
     if (this.disposed) return;
@@ -90,7 +100,55 @@ export class Prompter extends Controller {
     });
     advanced.body.append(negative);
     this.body.append(advanced.root);
+    this.runButton = button(
+      "Generate",
+      "play",
+      () => this.generate(),
+      true,
+    );
+    this.runButton.classList.add("dmai-primary", "dmai-generate");
+    this.body.append(this.runButton, this.progressView.readout);
     this.sync();
+    this.renderProgress();
+  }
+  updateProgress(state) {
+    if (this.progress?.phase === "error" && progressPresentation(state).busy)
+      this.note();
+    this.progress = state;
+    if (state.phase === "error" && state.message)
+      this.error(new Error(state.message));
+    this.renderProgress();
+  }
+  renderProgress() {
+    const view = this.progressView.update(this.progress);
+    if (this.runButton) this.runButton.disabled = Boolean(this.queuePending || view.busy);
+  }
+  async generate() {
+    if (this.queuePending || progressPresentation(this.progress).busy || this.disposed) return;
+    return this.guard(async () => {
+      this.queuePending = true;
+      this.note();
+      this.renderProgress();
+      try {
+        await this.context.generate(this.node);
+      } catch (error) {
+        this.updateProgress({
+          phase: "error",
+          percent: this.progress?.percent ?? 0,
+          message: error?.message ?? String(error),
+        });
+        throw error;
+      } finally {
+        this.queuePending = false;
+        if (!this.disposed) this.renderProgress();
+      }
+    });
+  }
+  dispose() {
+    if (this.disposed) return;
+    this.stopProgress?.();
+    this.progressView?.dispose();
+    super.dispose();
   }
   intent() {
     const v = this.node.properties?.dmai_format;

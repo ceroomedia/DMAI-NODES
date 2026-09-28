@@ -1,4 +1,4 @@
-# Validation — 0.1.0 preview
+# Validation — 0.1.1 preview
 
 Checked on 2026-09-28. This release has working ComfyUI registration, CPU contract tests and real local API checks. GPU image generation is still pending.
 
@@ -14,8 +14,8 @@ Checked on 2026-09-28. This release has working ComfyUI registration, CPU contra
 
 | Check | Evidence |
 | --- | --- |
-| Python suite | 70 tests passed with optional real-Comfy CPU tests enabled. |
-| JavaScript suite | 19 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment and Comfy change events. |
+| Python suite | 81 tests passed with optional real-Comfy CPU tests enabled, including scoped native progress registry updates and multi-image progress. |
+| JavaScript suite | 38 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment, Comfy change events, progress presentation and job lifecycle handling. |
 | Node registration | All seven native V3 nodes appear in real `/object_info`. |
 | Runtime choices | Four model profiles, 45 native sampler names and 9 schedulers in the test installation. Extension installations can change these counts. |
 | LoRA loading | Four real CPU comparisons use tiny safetensors, Comfy's file loader, ModelPatcher and LoRA weight calculation. Results match the standard loader and expected low-rank math exactly. |
@@ -23,6 +23,9 @@ Checked on 2026-09-28. This release has working ComfyUI registration, CPU contra
 | Enhancer dependency | Both pinned upstream implementations, 1.1.0 and 1.4.2, pass source/signature checks and register the expected patch on a small test object. No model inference. |
 | Gallery | Real Comfy queue jobs save synthetic 64×64 PNGs. Two selected ZIP entries pass CRC and match original download bytes exactly. Unit tests cover history snapshots, cross-gallery rejection and missing originals. |
 | UI transport | Native Comfy merges `dmai_gallery` correctly; no second native image-preview payload is emitted. |
+| Progress transport | A real `/prompt` job and WebSocket emitted `preparing` then `error` with the correct prompt and Engine IDs when the optional enhancer was absent. No completion event was fabricated. |
+| Progress lifecycle | Automated tests cover cached jobs, subgraph identity, multiple Engine branches, queued-job removal, failure, cancellation, disconnect and cleanup. Only native workflow success reaches 100%. |
+| Progress browser check | Generate appears only in Prompter. A real Comfy execution failure re-enabled it and showed the actionable error. The production component harness displayed a 42% perimeter, disabled Generate while active, and restored it at 100% completion using explicitly labeled fixture states. |
 | Browser | Production panels render in real Comfy Canvas. Custom dimensions, image count, Manual/Enhanced round trips and native sampler/scheduler menus were exercised. Saving and reloading retained 1152×768, count 2, 22 steps, DPM++ 2M and Karras. Reordering retained LoRA model strength 0.65 and independent CLIP strength 0.4. Comfy's unsaved marker and Undo respond to edits. Two non-adjacent Gallery images could be selected. |
 
 The visual Gallery fixtures are solid-color test images, not generated model results.

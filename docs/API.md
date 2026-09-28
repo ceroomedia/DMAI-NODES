@@ -24,6 +24,43 @@ In a completed starter job, Gallery metadata is at `history[prompt_id]["outputs"
 
 Use seed strings for the full unsigned 64-bit range; JavaScript numbers cannot represent all of it exactly. Each image's exact seed is recorded in the Engine report. The CLI timeout only stops waiting; it does not cancel the job.
 
+## Generation progress over WebSocket
+
+Connect to ComfyUI's `/ws?clientId=<client ID>` before submitting the workflow. Use the same ID as `client_id` in `POST /prompt`. The Engine sends `dmai_generation_progress` messages to that client through ComfyUI's existing WebSocket:
+
+```json
+{
+  "type": "dmai_generation_progress",
+  "data": {
+    "prompt_id": "<queued prompt ID>",
+    "node_id": "3",
+    "phase": "sampling",
+    "image_index": 1,
+    "image_count": 2,
+    "value": 4,
+    "max": 8,
+    "fraction": 0.6842105263
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `prompt_id` | Native ComfyUI execution ID; match it to the queued job. |
+| `node_id` | Native executing Engine ID. Expanded subgraphs may use a different ID from the visible graph. |
+| `phase` | `preparing`, `sampling`, `decoding`, `finalizing`, `complete`, `error` or `interrupted`. |
+| `image_index` / `image_count` | Zero-based current image index and total requested images. |
+| `value` / `max` | Current sampler progress counters; use them during `sampling`. |
+| `fraction` | Monotonic completed-work fraction from 0 to 1 across this Engine invocation. |
+
+When available, `display_node_id`, `real_node_id` and `parent_node_id` provide ComfyUI's native subgraph mapping. Clients must match both the job and the intended Engine; receiving an event for another node does not advance this Engine.
+
+The fraction normalizes each image's native sampler updates to its resolved step count, adds one unit after each completed decode, and reserves one final unit for assembling the Engine result. It measures completed work, not elapsed time. Model loading stays at zero. A sampler that emits no native progress advances only when its call returns; no timer simulates sampling progress. Internal VAE updates are excluded from the sampler counters.
+
+**Engine `complete` is not workflow completion.** Gallery or other downstream nodes may still be running. The Prompter caps its display at 99% until ComfyUI emits native `execution_success` for the same `prompt_id`, so saved results are available before 100% appears. Handle native `execution_error` and `execution_interrupted` as failure/cancellation, including failures after the Engine has finished. Cached Engines may emit no package progress events; use native execution events and `/history/{prompt_id}` to determine the job's final state.
+
+Progress observers exist only for the duration of Engine execution and are removed after success, failure or interruption. No additional WebSocket server is required.
+
 ## Package endpoints
 
 Routes are relative to ComfyUI's base URL. JSON responses use `{"ok": true, "data": ...}` or `{"ok": false, "error": ...}`. Downloads return file bytes.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 — 2026-09-28
+
+- Move Generate from the Generation Engine to the Prompter.
+- Add a softly glowing Prompter outline that fills from measured sampling and decoding progress across all requested images.
+- Wait for successful workflow completion before showing 100%; errors and cancellation retain their failure state.
+- Publish execution-specific progress events through ComfyUI's existing WebSocket, with handlers removed after every run.
+
 ## 0.1.0 — 2026-09-28
 
 Initial public DMAI NODES release, using the Slate design.

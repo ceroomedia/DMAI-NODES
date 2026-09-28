@@ -4,6 +4,7 @@ import { envelope } from "./core.mjs";
 import { Prompter, LoRAStack } from "./inputs.mjs";
 import { Engine } from "./engine.mjs";
 import { Gallery } from "./gallery.mjs";
+import { GenerationProgress } from "./progress.mjs";
 
 const controllers = new WeakMap();
 const types = {
@@ -13,12 +14,32 @@ const types = {
   DMAIGallery: Gallery,
 };
 let bootstrapPromise;
+const progress = new GenerationProgress({
+  api,
+  getRootGraph: () => app.rootGraph ?? app.graph,
+});
+function* graphNodes(graph, visited = new Set()) {
+  if (!graph || visited.has(graph)) return;
+  visited.add(graph);
+  for (const node of graph._nodes ?? []) {
+    yield node;
+    if (node.subgraph) yield* graphNodes(node.subgraph, visited);
+  }
+}
 const context = {
   api,
   isConfiguring: () => Boolean(app.configuringGraph),
   beforeChange: () => app.canvas?.emitBeforeChange?.(),
   afterChange: () => app.canvas?.emitAfterChange?.(),
-  queue: () => app.queuePrompt(0, 1),
+  watchProgress: (node, callback) => progress.watch(node, callback),
+  generate: (node) => progress.generate(node, async () => {
+    for (const current of graphNodes(app.rootGraph ?? app.graph)) {
+      const controller = controllers.get(current);
+      if (controller instanceof Engine && !controller.disposed && !controller.commitControls())
+        throw new Error("Check the Generation Engine settings before generating.");
+    }
+    return app.queuePrompt(0, 1);
+  }),
   bootstrap(refresh = false) {
     if (refresh || !bootstrapPromise)
       bootstrapPromise = envelope(api, "/bootstrap").catch((error) => {
@@ -43,7 +64,7 @@ function install(node) {
   }
 }
 function refreshGraph() {
-  for (const node of app.graph?._nodes ?? []) {
+  for (const node of graphNodes(app.rootGraph ?? app.graph)) {
     install(node);
     controllers.get(node)?.hydrate();
   }
@@ -51,6 +72,7 @@ function refreshGraph() {
 app.registerExtension({
   name: "DMAI.Nodes.Slate",
   setup() {
+    progress.start();
     const href = new URL("./nodes.css", import.meta.url).href;
     if (!document.querySelector("link[data-dmai-nodes]")) {
       const link = document.createElement("link");

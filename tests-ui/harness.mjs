@@ -3,6 +3,7 @@
 import { Prompter, LoRAStack } from "../web/inputs.mjs";
 import { Engine } from "../web/engine.mjs";
 import { Gallery } from "../web/gallery.mjs";
+import { readPrompt, readManifest, readEngine } from "../web/core.mjs";
 const settings = {
   steps: 8,
   cfg: 1.1,
@@ -109,10 +110,35 @@ const svg = (index) =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="${["#304b40", "#605343", "#364c56", "#6a6248"][index % 4]}"/><stop offset="1" stop-color="#121b16"/></linearGradient></defs><rect width="400" height="500" fill="url(#g)"/><circle cx="200" cy="225" r="110" fill="none" stroke="#c8ee99" stroke-width="3"/><text x="200" y="240" text-anchor="middle" fill="#c8ee99" font-family="sans-serif" font-size="36">${String(index + 1).padStart(2, "0")}</text></svg>`)}`;
 const evidence = (message) =>
   (document.querySelector("#evidence").textContent = message);
+const fixtureProgress = new WeakMap(), progressListeners = new WeakMap();
+function emitProgress(node, state) {
+  fixtureProgress.set(node, state);
+  for (const listener of progressListeners.get(node) ?? [])
+    listener(structuredClone(state));
+  evidence(`Fixture state: ${state.phase}, ${state.percent}%. No generation or elapsed-time estimate.`);
+}
 const context = {
   bootstrap: async () => structuredClone(data),
-  queue: async () =>
-    evidence("Queue call: one workflow, backend controls image count."),
+  watchProgress(node, callback) {
+    const listeners = progressListeners.get(node) ?? new Set();
+    progressListeners.set(node, listeners);
+    listeners.add(callback);
+    callback(structuredClone(fixtureProgress.get(node) ?? { phase: "idle", percent: 0 }));
+    return () => listeners.delete(callback);
+  },
+  async generate(node) {
+    if (node !== nodes.prompter)
+      throw new Error("This fixture only queues from its Prompter.");
+    if (!controllers.engine.commitControls())
+      throw new Error("Correct the highlighted Engine settings before queueing.");
+    if (!controllers.lora.syncStrengths())
+      throw new Error("Correct the highlighted LoRA strength before queueing.");
+    readPrompt(nodes.prompter.widgets[0].value);
+    readManifest(nodes.lora.widgets[0].value);
+    readEngine(nodes.engine.widgets[0].value);
+    emitProgress(node, { phase: "queued", percent: 0 });
+    evidence("Fixture workflow queued after Engine and LoRA draft validation. Use the manual progress controls above; no generation runs.");
+  },
   api: {
     apiURL: (path) =>
       svg(Math.max(0, Number(path.match(/fixture-(\d+)/)?.[1] ?? 1) - 1)),
@@ -236,6 +262,20 @@ for (const [key, Class, widgetName] of [
   };
   nodes[key] = node;
   controllers[key] = new Class(node, context);
+}
+for (const control of document.querySelectorAll("[data-progress-phase]")) {
+  control.addEventListener("click", () => {
+    const phase = control.dataset.progressPhase;
+    const previous = fixtureProgress.get(nodes.prompter)?.percent ?? 0;
+    const percent = control.hasAttribute("data-progress-percent")
+      ? Number(control.dataset.progressPercent) : previous;
+    if (phase !== "error") controllers.prompter.note();
+    emitProgress(nodes.prompter, {
+      phase,
+      percent,
+      ...(phase === "error" ? { message: "Fixture error: the selected model could not be loaded." } : {}),
+    });
+  });
 }
 document.querySelector("#restore").onclick = () => {
   const saved = Object.fromEntries(

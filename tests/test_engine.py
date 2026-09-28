@@ -198,6 +198,45 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual([item["seed"] for item in report["images"]], [str(engine.UINT64_MAX), "0"])
         self.assertIsNone(report["preset"])
 
+    def test_engine_reports_each_sample_and_decode_with_failure_cleanup(self):
+        from dmai_nodes.progress import GenerationProgress
+        from test_progress import Registry
+        for fail in (False, True):
+            runtime = Runtime()
+            registry = Registry()
+            events = []
+            progress = GenerationProgress(registry=registry, send=lambda _, payload, sid: events.append(payload),
+                                          prompt_id="job-1", node_id="engine-1", client_id="owner-client")
+            original_sample = runtime.nodes.KSampler.sample
+            original_decode = runtime.nodes.VAEDecode.decode
+
+            def sample(instance, **kwargs):
+                registry.update(6, 12)
+                if fail:
+                    raise RuntimeError("native sampling failure")
+                registry.update(12, 12)
+                return original_sample(instance, **kwargs)
+
+            def decode(instance, vae, samples):
+                registry.update(500, 500)  # VAE internals must not become sampler steps.
+                return original_decode(instance, vae, samples)
+
+            with self.subTest(fail=fail), patch.object(GenerationProgress, "from_comfy", return_value=progress), \
+                 patch.object(runtime.nodes.KSampler, "sample", sample), \
+                 patch.object(runtime.nodes.VAEDecode, "decode", decode):
+                if fail:
+                    with self.assertRaisesRegex(RuntimeError, "native sampling failure"):
+                        self.execute(runtime)
+                    self.assertEqual(events[-1]["phase"], "error")
+                else:
+                    self.execute(runtime)
+                    self.assertEqual(events[-1]["phase"], "complete")
+                    half_steps = [item for item in events if item["phase"] == "sampling" and item["value"] == 6]
+                    self.assertEqual([item["image_index"] for item in half_steps], [0, 1])
+                    self.assertFalse(any(item["value"] == 500 for item in events))
+                    self.assertEqual(events[-1]["fraction"], 1)
+                self.assertEqual(registry.handlers, {})
+
     def test_missing_enhancer_fails_before_model_load(self):
         runtime = Runtime()
         value = config()
@@ -375,6 +414,38 @@ class RealComfyEngineTests(unittest.TestCase):
         samplers, schedulers = sampler_choices()
         self.assertEqual(samplers, list(self.comfy.samplers.KSampler.SAMPLERS))
         self.assertEqual(schedulers, list(self.comfy.samplers.KSampler.SCHEDULERS))
+
+    def test_progress_uses_the_real_comfy_registry_and_execution_context(self):
+        from comfy_execution.graph import DynamicPrompt
+        from comfy_execution.progress import ProgressRegistry
+        from comfy_execution.utils import CurrentNodeContext
+        from server import PromptServer
+        from dmai_nodes.progress import GenerationProgress
+        from dmai_nodes.nodes import DMAIGenerationEngine, io
+
+        self.assertIn(io.Hidden.unique_id, DMAIGenerationEngine.define_schema().hidden)
+        registry = ProgressRegistry("real-registry-job", DynamicPrompt({"engine-1": {"class_type": "DMAIGenerationEngine", "inputs": {}}}))
+        events = []
+        server = types.SimpleNamespace(client_id="real-client", send_sync=lambda *event: events.append(event))
+        with patch("comfy_execution.progress.global_progress_registry", registry), \
+             patch.object(PromptServer, "instance", server, create=True), \
+             CurrentNodeContext("real-registry-job", "engine-1"):
+            with GenerationProgress.from_comfy("engine-1") as progress:
+                progress.configure(1, 4)
+                progress.begin_sampling(0)
+                registry.update_progress("engine-1", 2, 4)
+                self.assertAlmostEqual(progress.fraction, 2 / 6)
+                registry.update_progress("unrelated-node", 100, 100)
+                self.assertAlmostEqual(progress.fraction, 2 / 6)
+                progress.begin_decode()
+                registry.update_progress("engine-1", 100, 100)
+                self.assertAlmostEqual(progress.fraction, 4 / 6)
+                progress.image_done()
+            self.assertEqual(registry.handlers, {})
+            registry.update_progress("engine-1", 0, 1)
+        self.assertEqual(events[-1][1]["phase"], "complete")
+        self.assertEqual(events[-1][2], "real-client")
+        self.assertEqual(events[-1][1]["real_node_id"], "engine-1")
 
     def test_standalone_krea_enhancer_rejects_other_models_before_dependency(self):
         with patch.object(engine, "_enhancer_dependency") as dependency:

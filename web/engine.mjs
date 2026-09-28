@@ -400,25 +400,6 @@ export class Engine extends Controller {
         ),
       );
     this.body.append(advanced.root);
-    this.runButton = button(
-      "Generate",
-      "play",
-      () =>
-        this.guard(async () => {
-          if (!this.commitControls()) return;
-          this.runButton.disabled = true;
-          try {
-            await this.context.queue();
-            this.note("Workflow queued.");
-          } finally {
-            if (!this.disposed) this.runButton.disabled = false;
-          }
-        }),
-      true,
-    );
-    this.runButton.classList.add("dmai-primary", "dmai-generate");
-    this.runButton.disabled = !profile;
-    this.body.append(this.runButton);
     if (this.data && !profile)
       this.error(
         new Error(

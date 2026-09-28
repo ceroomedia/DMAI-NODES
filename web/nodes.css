@@ -646,3 +646,70 @@
     animation: none !important;
   }
 }
+
+/* The outline stays inside the node so real Comfy sockets remain unobstructed. */
+.dmai-panel.dmai-prompter {
+  overflow: hidden;
+}
+.dmai-nodes .dmai-prompter-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4b584e transparent;
+  border-radius: inherit;
+}
+.dmai-nodes .dmai-progress-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+  fill: none;
+}
+.dmai-nodes .dmai-progress-track {
+  stroke: var(--dmai-accent);
+  stroke-width: 1;
+  opacity: 0.13;
+}
+.dmai-nodes .dmai-progress-stroke {
+  stroke: var(--dmai-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 350ms ease-out;
+  filter: drop-shadow(0 0 3px #c8ee9966);
+}
+.dmai-nodes[data-generating="true"] .dmai-progress-stroke {
+  animation: dmai-progress-glow 2.4s ease-in-out infinite;
+}
+.dmai-nodes[data-generation-phase="queued"] .dmai-progress-stroke {
+  transition: none;
+}
+.dmai-nodes .dmai-progress-readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 9px;
+  color: var(--dmai-muted);
+  font-size: 10px;
+}
+.dmai-nodes .dmai-progress-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--dmai-accent);
+}
+.dmai-nodes[data-generation-phase="error"] .dmai-progress-stroke,
+.dmai-nodes[data-generation-phase="interrupted"] .dmai-progress-stroke {
+  stroke: #edb89e;
+  filter: none;
+}
+.dmai-nodes[data-generation-phase="error"] .dmai-progress-value,
+.dmai-nodes[data-generation-phase="interrupted"] .dmai-progress-value {
+  color: #edb89e;
+}
+@keyframes dmai-progress-glow {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}

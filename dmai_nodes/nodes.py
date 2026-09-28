@@ -68,11 +68,12 @@ class DMAIGenerationEngine(io.ComfyNode):
                     io.Model.Input("model",optional=True,advanced=True),io.Clip.Input("clip",optional=True,advanced=True),io.Vae.Input("vae",optional=True,advanced=True),
                     io.Latent.Input("latent",optional=True,advanced=True),
                     io.Conditioning.Input("positive",optional=True,advanced=True),io.Conditioning.Input("negative",optional=True,advanced=True)],
-            outputs=[io.Image.Output(display_name="images"),ReportPort.Output(display_name="report")])
+            outputs=[io.Image.Output(display_name="images"),ReportPort.Output(display_name="report")],
+            hidden=[io.Hidden.unique_id])
 
     @classmethod
     def execute(cls,request,config_json,loras=None,sampler=None,sigmas=None,model=None,clip=None,vae=None,latent=None,positive=None,negative=None):
-        images,report=execute_engine(request,config_json,loras,sampler=sampler,sigmas=sigmas,model=model,clip=clip,vae=vae,latent=latent,positive=positive,negative=negative)
+        images,report=execute_engine(request,config_json,loras,sampler=sampler,sigmas=sigmas,model=model,clip=clip,vae=vae,latent=latent,positive=positive,negative=negative,node_id=getattr(cls.hidden,"unique_id",None))
         return io.NodeOutput(images,report,ui={"dmai_report":[report]})
 
     @classmethod

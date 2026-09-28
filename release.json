@@ -1,6 +1,6 @@
 {
   "name": "DMAI NODES",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "channel": "preview",
   "license": "MIT",
   "comfyui_reference": "0.37.0",

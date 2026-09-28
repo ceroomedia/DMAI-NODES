@@ -29,6 +29,18 @@
         border: 1px solid #333d35;
         border-radius: 7px;
       }
+      .qa-progress {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        font-size: 11px;
+        color: #a3ada5;
+      }
+      .qa-progress span {
+        margin-right: 6px;
+      }
       .layout {
         display: grid;
         grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr) minmax(
@@ -80,6 +92,16 @@
       ><button id="restore">Serialize & restore</button
       ><button id="external">External JSON values</button
       ><button id="error">Invalid saved JSON</button>
+      <div class="qa-progress" role="group" aria-label="Manual fixture progress">
+        <span>Manual progress fixture</span>
+        <button data-progress-phase="queued" data-progress-percent="0">Queued</button>
+        <button data-progress-phase="sampling" data-progress-percent="42">Sampling 42%</button>
+        <button data-progress-phase="decoding" data-progress-percent="90">Decoding 90%</button>
+        <button data-progress-phase="complete" data-progress-percent="100">Complete</button>
+        <button data-progress-phase="interrupted">Interrupted</button>
+        <button data-progress-phase="error">Error</button>
+        <button data-progress-phase="idle" data-progress-percent="0">Reset progress</button>
+      </div>
     </header>
     <main class="layout">
       <div class="stack">

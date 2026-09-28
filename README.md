@@ -14,7 +14,7 @@ tags:
 
 **A compact image workflow for ComfyUI.** Slate surfaces, clean Inter typography and English controls.
 
-**0.1.0 preview** · [GitHub releases](https://github.com/ceroomedia/DMAI-NODES/releases) · [Hugging Face download mirror](https://huggingface.co/ceroomedia/DMAI-NODES)
+**0.1.1 preview** · [GitHub releases](https://github.com/ceroomedia/DMAI-NODES/releases) · [Hugging Face download mirror](https://huggingface.co/ceroomedia/DMAI-NODES)
 
 Prompter → Generation Engine → Gallery, with an ordered LoRA Loader feeding the engine.
 
@@ -22,7 +22,7 @@ Prompter → Generation Engine → Gallery, with an ordered LoRA Loader feeding 
 
 | Node | Purpose |
 | --- | --- |
-| **DMAI Prompter** | Prompt, 19 aspect ratios, 1K / 2K / Custom dimensions, image count and optional connected text. |
+| **DMAI Prompter** | Prompt, 19 aspect ratios, 1K / 2K / Custom dimensions, image count, Generate button and generation progress outline. |
 | **DMAI LoRA Loader** | Reorderable stack, enabled state, separate model/CLIP strengths and strict file checks. |
 | **DMAI Generation Engine** | Model profiles, DMAI Enhanced or Manual sampling, imported settings presets, seed sequence and execution report. |
 | **DMAI Gallery** | Persistent PNG originals, multiple selection, per-image download and selection ZIP. |
@@ -56,7 +56,7 @@ ZIP installation is also supported: extract the release so `ComfyUI/custom_nodes
 1. Import a starter from `workflows`: Krea, SDXL, Qwen or FLUX. Use the `.json` file for the UI and `.api.json` for API calls.
 2. Select installed model files in the Engine. Install any optional enhancement dependency needed by the selected preset.
 3. Enter the prompt and image count. Add LoRAs if needed.
-4. Choose **Generate**. Preview or download saved results from Gallery.
+4. Choose **Generate** in the Prompter. Its softly glowing outline follows generation across all requested images and reaches 100% when the workflow finishes. Preview or download saved results from Gallery.
 
 For Krea without the optional enhancer, choose **Krea / Clean Base** or Manual with Enhancer set to `none`. Models and LoRAs remain subject to their own licenses.
 
@@ -64,6 +64,7 @@ For Krea without the optional enhancer, choose **Krea / Clean Base** or Manual w
 
 - LoRAs are applied in their displayed order, before the Engine encodes both prompts. Disabled rows and rows with both strengths at zero are skipped; an active nonzero LoRA with zero effective patch matches raises an error. “Loaded” reports registered patches, not a completed image-quality test. See [advanced conditioning](docs/MODELS.md#advanced-connections) when encoding text upstream.
 - Image count is handled by the backend. Images use `seed`, `seed + 1`, and so on, modulo 2^64. The report stores the exact seeds as decimal strings.
+- Prompter progress follows native sampler updates, completed image decoding and workflow completion. Loading has no invented percentage; errors and cancellation never display successful completion. Optional connected text is still supported.
 - Gallery IDs are serialized in workflows. The new package uses separate storage under `output/DMAI-NODES`; existing DMAI Studio history is not deleted or automatically imported.
 - ZIP exports are limited to **100 images / 2 GiB**. Full-history selection uses a snapshot so later images are not silently added.
 - Invalid saved JSON remains visible for correction. It is not replaced by defaults.
