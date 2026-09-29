@@ -30,7 +30,7 @@ For ComfyUI Desktop, use the installation directory shown in Desktop's settings 
 ## Runpod
 
 1. Start your chosen ComfyUI Pod using your normal template and persistent volume. GPU availability, model licenses and Pod cost are separate from this package.
-2. Open the Pod terminal and find the actual ComfyUI folder. `/workspace/ComfyUI` is common; templates differ.
+2. Open the Pod terminal and find the actual ComfyUI folder. Common examples are `/workspace/ComfyUI` and `/workspace/runpod-slim/ComfyUI`; templates differ.
 3. Activate the same environment as the running ComfyUI server. Check its launcher if unsure.
 4. Run the commands below, adjusting the path when needed.
 
@@ -48,7 +48,7 @@ The instructions do not start a Pod or buy compute. No Runpod template installat
 
 ## Optional Krea enhancement
 
-The **DMAI Krea Enhancer** and **Krea / Original** preset require the upstream extension. From the ComfyUI directory:
+The **DMAI Krea Enhancer**, Manual sampling with Enhancer set to `krea2t`, and any preset enabling that enhancer require the upstream extension. The historical **Krea / Original** recipe also enables it. New nodes and starter workflows leave enhancement at `none`. From the ComfyUI directory:
 
 ```bash
 git clone https://github.com/capitan01R/ComfyUI-Krea2T-Enhancer.git custom_nodes/ComfyUI-Krea2T-Enhancer
@@ -61,31 +61,43 @@ RES4LYF is optional and installed separately. Follow its upstream instructions a
 
 ## Update and remove
 
-Update only when no job is running. From the ComfyUI directory with its Python environment active:
+Update only when no job is running. To install **0.2.0 preview**, including from a checkout pinned to an older release, run from the ComfyUI directory with its Python environment active:
 
 ```bash
-git -C custom_nodes/DMAI-NODES pull --ff-only
+git -C custom_nodes/DMAI-NODES fetch origin tag v0.2.0
+git -C custom_nodes/DMAI-NODES checkout v0.2.0
 python -m pip install -r custom_nodes/DMAI-NODES/requirements.txt
+git -C custom_nodes/DMAI-NODES describe --tags --exact-match
 ```
 
 For Windows Portable, run from the portable folder instead:
 
 ```powershell
-git -C .\ComfyUI\custom_nodes\DMAI-NODES pull --ff-only
+git -C .\ComfyUI\custom_nodes\DMAI-NODES fetch origin tag v0.2.0
+git -C .\ComfyUI\custom_nodes\DMAI-NODES checkout v0.2.0
 .\python_embeded\python.exe -m pip install -r .\ComfyUI\custom_nodes\DMAI-NODES\requirements.txt
+git -C .\ComfyUI\custom_nodes\DMAI-NODES describe --tags --exact-match
 ```
 
-Restart ComfyUI afterward. For ZIP installations, replace package files from the new release while preserving your workflows and output. To uninstall, remove only the custom-node folder after stopping ComfyUI. Saved originals and the gallery index are in `output/DMAI-NODES` and are not removed by package updates.
+The final command should print `v0.2.0`. Git's detached HEAD message is expected when selecting a fixed release tag. If Git reports local changes, preserve those changes before retrying; the commands above do not discard them.
+
+Restart ComfyUI afterward, then hard-refresh with Ctrl+F5. For ZIP installations, replace package files from the new release while preserving your workflows and output. To uninstall, remove only the custom-node folder after stopping ComfyUI. Saved originals and the gallery index are in `output/DMAI-NODES` and are not removed by package updates.
+
+### What changes in 0.2.0
+
+The larger interface adds readable Canvas socket captions and minimum node sizes. Saved nodes may grow to the new minimum dimensions on load; their IDs and connections remain unchanged. Manual is the default for new Engines and starter workflows. Existing workflows retain their saved sampling settings and any selected historical preset.
+
+For new prepared settings, switch to **DMAI Enhanced** and choose **Upload JSON**. Upload is available only in that mode. The old preset export control is removed. Keep your original preset files; existing imported presets remain saved in the workflow. See [sampling modes and legacy preset compatibility](MODELS.md#manual-or-dmai-enhanced).
 
 ### Updating from 0.1.2 or earlier
 
-The new Prompter now registers as `DMAINodesPrompter`. Its visible name remains **DMAI Prompter**, under **DMAI NODES**, with the **DMAI-NODES** package badge. Older DMAI Suite and standalone Prompter installations use `DMAIPrompter`; they can remain enabled alongside this package.
+Since 0.1.3, the new Prompter registers as `DMAINodesPrompter`. Its visible name remains **DMAI Prompter**, under **DMAI NODES**, with the **DMAI-NODES** package badge. Older DMAI Suite and standalone Prompter installations use `DMAIPrompter`; they can remain enabled alongside this package. Version 0.2.0 keeps that separation.
 
 To install exactly this release from an existing Git checkout, including a checkout pinned to an older tag, run inside `custom_nodes/DMAI-NODES`:
 
 ```bash
-git fetch origin tag v0.1.3
-git checkout v0.1.3
+git fetch origin tag v0.2.0
+git checkout v0.2.0
 python -m pip install -r requirements.txt
 git describe --tags --exact-match
 ```
@@ -99,11 +111,12 @@ For API JSON sent directly to `/prompt`, use the new `DMAINodesPrompter` class t
 ## Troubleshooting
 
 - **No DMAI nodes:** inspect the ComfyUI console for import errors; check the Python environment and one-level ZIP extraction.
-- **Prompter missing when older DMAI nodes are installed:** update to 0.1.3 or newer, restart ComfyUI and hard-refresh. Search `DMAINodesPrompter` or select **DMAI Prompter** with the **DMAI-NODES** badge. The new node has a `request` output of type `DMAI_PROMPT`.
+- **Prompter missing when older DMAI nodes are installed:** update to 0.2.0 using the commands above, restart ComfyUI and hard-refresh. The coexistence fix was introduced in 0.1.3. Search `DMAINodesPrompter` or select **DMAI Prompter** with the **DMAI-NODES** badge. The new node has a `request` output of type `DMAI_PROMPT`, captioned **Prompt** in Canvas.
 - **Missing model:** select the exact catalog entry, including subfolder. Refresh the model list after adding files.
-- **Enhancer unavailable:** install the pinned dependency or choose Clean Base/Manual with `none`.
+- **Enhancer unavailable:** install the pinned dependency or use Manual with Enhancer set to `none`.
+- **Enhanced asks for a preset:** choose **Upload JSON** in DMAI Enhanced and upload matching settings, or switch to Manual.
 - **LoRA has no matching patches:** verify the LoRA family and selected base model; this is deliberately an error.
 - **Gallery missing original:** restore the file from your backup. An export will not silently omit a selected missing file.
-- **Frontend layout issue:** refresh first, then test Comfy's Canvas renderer. Keep the exact Core and Frontend versions in your issue report.
+- **Frontend layout issue:** hard-refresh first, then test Comfy's Canvas renderer. Socket captions are drawn outside the node; leave room between neighboring nodes. Keep the exact Core and Frontend versions in your issue report.
 
 Official references: [Portable](https://docs.comfy.org/installation/comfyui_portable_windows), [manual installation](https://docs.comfy.org/installation/manual_install), [Runpod ComfyUI guide](https://docs.runpod.io/tutorials/pods/comfyui).

@@ -19,13 +19,17 @@ These are example filenames, not included downloads. Select the compatible files
 
 ## Manual or DMAI Enhanced
 
-**Manual** exposes Steps, CFG, Sampler, Scheduler and Denoise. Choices come from the active ComfyUI sampler registry, including names registered by extensions. A name appearing in the registry does not prove it works with every model.
+**Manual** is the default for new Engines and all included starter workflows. It exposes Steps, CFG, Sampler, Scheduler and Denoise, with Enhancer available for Krea. Choices come from the active ComfyUI sampler registry, including names registered by extensions. A name appearing in the registry does not prove it works with every model. Changing a model file keeps the current mode and settings; a newly selected architecture starts in Manual unless that workflow already holds a saved draft for it.
 
-**DMAI Enhanced** selects a validated settings preset. The built-in Krea Original recipe uses 8 steps, CFG 1.1, Euler, Beta, denoise 1 and the Krea enhancer at strength 1 / text scale 1. Clean Base disables enhancement. SDXL, Qwen and FLUX base presets provide editable starting points, not quality guarantees.
+**DMAI Enhanced** uses a validated JSON settings file. Switch to this mode, choose **Upload JSON**, and select a file for the intended architecture. If several matching presets have been imported, choose one under **DMAI settings**. Switching back to Manual restores your manual draft. The upload control appears only in Enhanced; there is no preset export button, so keep the source JSON for reuse.
+
+Enhanced can be opened before a file has been uploaded. Generation requires a selected preset: an empty Enhanced configuration reports **Upload a DMAI JSON preset in DMAI Enhanced, or switch the Engine to Manual.** Upload matching settings or choose Manual before trying again.
+
+Historical built-in presets are retained for existing workflows and API templates. A previously selected preset remains visible as saved workflow settings; the interface does not offer the full built-in catalog for new selections. The historical Krea Original recipe uses 8 steps, CFG 1.1, Euler, Beta, denoise 1 and the Krea enhancer at strength 1 / text scale 1. New Krea nodes use Manual with the same sampling values and enhancement `none`. These settings are starting points, not quality guarantees.
 
 FLUX.1 Dev uses embedded guidance 3.5; CFG is a separate parameter. Advanced users can supply both conditioning inputs, using Comfy's FluxGuidance upstream to change embedded guidance. External conditioning bypasses Prompter text encoding; apply any CLIP LoRAs before that external encoding and set the Engine recipe's CLIP strengths to zero. The Engine rejects active nonzero CLIP strengths with supplied conditioning.
 
-The preset import button accepts a single preset or a pack of up to 20. Files are limited to 128 KiB. Unknown fields, model descriptors, non-finite values and unsupported sampling choices are rejected. Imported presets cannot replace built-in IDs. Use a new ID for your variation.
+The Enhanced upload accepts a single preset or a pack of up to 20. Files are limited to 128 KiB. Unknown fields, model descriptors, non-finite values and unsupported sampling choices are rejected. Imported presets cannot replace the reserved historical built-in IDs. Use a new ID for your variation. A pack may contain different supported architectures; the interface prefers a preset matching the current architecture, or switches to the first imported preset's architecture when none matches. Confirm the model files after an architecture change.
 
 ```json
 {
@@ -37,17 +41,17 @@ The preset import button accepts a single preset or a pack of up to 20. Files ar
 }
 ```
 
-Preset files contain data only. They cannot download models, execute Python or register adapters. See `resources/presets/dmai-presets-v1.json` for the built-in pack.
+Preset files contain data only. They cannot download models, execute Python or register adapters. `resources/presets/dmai-presets-v1.json` is the historical compatibility catalog, retained as a reference for saved workflows. Its IDs are reserved; copy the settings into a new preset with a unique ID for upload.
 
 ## Krea enhancer as a separate node
 
-Connect a Krea MODEL through **DMAI Krea Enhancer**, then to Engine's advanced MODEL input. Also connect matching CLIP and VAE. Select Krea Clean Base or Manual with enhancement `none` in Engine when the upstream node has already applied it. Double enhancement is rejected.
+Connect a Krea MODEL through **DMAI Krea Enhancer**, then to Engine's advanced MODEL input. Also connect matching CLIP and VAE. Use Manual with enhancement `none`, or an imported preset with `"enhancer": "none"`, when the upstream node has already applied it. Double enhancement is rejected.
 
 The standalone node requires the separately installed, reviewed [Krea2T Enhancer](https://github.com/capitan01R/ComfyUI-Krea2T-Enhancer). It exposes Enabled, Strength and Text scale. It rejects non-Krea models when enabled. Qwen, FLUX and SDXL never receive this enhancement. See [installation](INSTALLATION.md#optional-krea-enhancement) for the pinned dependency.
 
 ## Advanced connections
 
-Drag ComfyUI's native output ports to matching input ports. The basic links are Prompter **request** → Engine **request**, LoRA Loader **loras** → Engine **loras**, Engine **images** → Gallery **images**, and optionally Engine **report** → Gallery **report**. These are workflow connections, separate from buttons inside the node panels.
+Drag ComfyUI's native output dots to matching input dots. In Canvas, readable captions sit outside the nodes: Prompter **Prompt** → Engine **Prompt**, LoRA Loader **LoRAs** → Engine **LoRAs**, Engine **Images** → Gallery **Images**, and optionally Engine **Report** → Gallery **Report**. The caption **Prompt** represents the existing `request` input/output; serialized names and types are unchanged. Captions do not add another connection bar or replace native drag targets. Minimum node dimensions keep the controls and socket spacing usable; Nodes 2.0 may present ports differently.
 
 Reveal optional advanced inputs using ComfyUI's native node controls.
 
@@ -71,7 +75,9 @@ Engine already decodes its normal IMAGE output. The separate nodes expose the sa
 
 ## LoRA behavior
 
-The LoRA Loader produces an ordered recipe. Engine applies it before encoding both prompts. Use the row arrows to change the order. Model and CLIP strengths are separate; disabled rows and rows with both strengths at zero are skipped. Active nonzero rows fail on missing or ambiguous paths or zero effective matches. Partial matches appear in the execution report.
+The LoRA Loader produces an ordered recipe. Engine applies it before encoding both prompts. Each card shows its order and full filename above separate **Model** and **CLIP** strength controls. Use the arrows, drag handle, or Alt+Up / Alt+Down on the handle to change the order. Both strengths accept values from -20 to 20. Invalid drafts block reordering and queue submission until corrected.
+
+Disabled rows and rows with both strengths at zero are skipped. The active count updates as the strengths change. Active nonzero rows fail on missing or ambiguous paths or zero effective matches. Partial matches appear in the execution report.
 
 File names preserve case and subfolders. Active file content hashes participate in cache invalidation. Registered patches are compared to Comfy's standard loader in CPU tests; visual compatibility with every LoRA is not guaranteed.
 

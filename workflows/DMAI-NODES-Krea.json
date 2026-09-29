@@ -6,12 +6,12 @@
       "id": 1,
       "type": "DMAINodesPrompter",
       "pos": [
-        40,
-        100
+        80,
+        60
       ],
       "size": [
-        410,
-        475
+        504,
+        738
       ],
       "flags": {},
       "order": 0,
@@ -44,12 +44,12 @@
       "id": 2,
       "type": "DMAILoRAStack",
       "pos": [
-        40,
-        660
+        80,
+        880
       ],
       "size": [
-        410,
-        380
+        524,
+        568
       ],
       "flags": {},
       "order": 1,
@@ -76,12 +76,12 @@
       "id": 3,
       "type": "DMAIGenerationEngine",
       "pos": [
-        570,
-        220
+        804,
+        180
       ],
       "size": [
-        420,
-        700
+        484,
+        818
       ],
       "flags": {},
       "order": 2,
@@ -160,19 +160,19 @@
         "Node name for S&R": "DMAIGenerationEngine"
       },
       "widgets_values": [
-        "{\"schema_version\": 1, \"profile_id\": \"krea2-turbo\", \"mode\": \"enhanced\", \"preset_id\": \"dmai-krea2-original-v1\", \"settings\": {\"steps\": 8, \"cfg\": 1.1, \"sampler\": \"euler\", \"scheduler\": \"beta\", \"denoise\": 1, \"enhancer\": \"krea2t\"}, \"seed\": 481516, \"models\": {\"diffusion_model\": \"krea2_turbo_fp8.safetensors\", \"text_encoder\": \"qwen3vl_4b_fp8_scaled.safetensors\", \"vae\": \"wan_2.1_vae.safetensors\", \"checkpoint\": \"\"}, \"presets\": []}"
+        "{\"schema_version\": 1, \"profile_id\": \"krea2-turbo\", \"mode\": \"manual\", \"preset_id\": \"\", \"settings\": {\"steps\": 8, \"cfg\": 1.1, \"sampler\": \"euler\", \"scheduler\": \"beta\", \"denoise\": 1, \"enhancer\": \"none\"}, \"seed\": 481516, \"models\": {\"diffusion_model\": \"krea2_turbo_fp8.safetensors\", \"text_encoder\": \"qwen3vl_4b_fp8_scaled.safetensors\", \"vae\": \"wan_2.1_vae.safetensors\", \"checkpoint\": \"\"}, \"presets\": []}"
       ]
     },
     {
       "id": 4,
       "type": "DMAIGallery",
       "pos": [
-        1100,
-        180
+        1488,
+        160
       ],
       "size": [
-        500,
-        720
+        804,
+        618
       ],
       "flags": {},
       "order": 3,
@@ -245,8 +245,8 @@
     "ds": {
       "scale": 0.7,
       "offset": [
-        45,
-        20
+        25,
+        25
       ]
     }
   },

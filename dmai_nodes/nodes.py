@@ -10,8 +10,8 @@ LoraPort = io.Custom("DMAI_LORA_STACK")
 ReportPort = io.Custom("DMAI_REPORT")
 DEFAULT_PROMPT = {"schema_version":1,"prompt":"","negative_prompt":"","width":832,"height":1024,"count":4}
 DEFAULT_LORAS = {"schema_version":1,"entries":[]}
-DEFAULT_ENGINE = {"schema_version":1,"profile_id":"krea2-turbo","mode":"enhanced","preset_id":"dmai-krea2-original-v1",
-    "settings":{"steps":8,"cfg":1.1,"sampler":"euler","scheduler":"beta","denoise":1,"enhancer":"krea2t"},
+DEFAULT_ENGINE = {"schema_version":1,"profile_id":"krea2-turbo","mode":"manual","preset_id":"",
+    "settings":{"steps":8,"cfg":1.1,"sampler":"euler","scheduler":"beta","denoise":1,"enhancer":"none"},
     "seed":481516,"models":{"diffusion_model":"krea2_turbo_fp8.safetensors","text_encoder":"qwen3vl_4b_fp8_scaled.safetensors","vae":"wan_2.1_vae.safetensors","checkpoint":""},"presets":[]}
 
 

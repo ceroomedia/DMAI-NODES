@@ -22,7 +22,7 @@
         "2",
         0
       ],
-      "config_json": "{\"schema_version\": 1, \"profile_id\": \"krea2-turbo\", \"mode\": \"enhanced\", \"preset_id\": \"dmai-krea2-original-v1\", \"settings\": {\"steps\": 8, \"cfg\": 1.1, \"sampler\": \"euler\", \"scheduler\": \"beta\", \"denoise\": 1, \"enhancer\": \"krea2t\"}, \"seed\": 481516, \"models\": {\"diffusion_model\": \"krea2_turbo_fp8.safetensors\", \"text_encoder\": \"qwen3vl_4b_fp8_scaled.safetensors\", \"vae\": \"wan_2.1_vae.safetensors\", \"checkpoint\": \"\"}, \"presets\": []}"
+      "config_json": "{\"schema_version\": 1, \"profile_id\": \"krea2-turbo\", \"mode\": \"manual\", \"preset_id\": \"\", \"settings\": {\"steps\": 8, \"cfg\": 1.1, \"sampler\": \"euler\", \"scheduler\": \"beta\", \"denoise\": 1, \"enhancer\": \"none\"}, \"seed\": 481516, \"models\": {\"diffusion_model\": \"krea2_turbo_fp8.safetensors\", \"text_encoder\": \"qwen3vl_4b_fp8_scaled.safetensors\", \"vae\": \"wan_2.1_vae.safetensors\", \"checkpoint\": \"\"}, \"presets\": []}"
     }
   },
   "4": {

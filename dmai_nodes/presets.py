@@ -150,4 +150,4 @@ def resolve_preset(preset_id, profile_id, imports):
                 if entry["model"]["id"] != profile_id:
                     raise ValueError("Preset belongs to a different model profile.")
                 return deepcopy(entry), source
-    raise ValueError("Selected preset was not found. Import it or choose a built-in preset.")
+    raise ValueError("Selected preset was not found. Upload its JSON in DMAI Enhanced, or switch to Manual.")

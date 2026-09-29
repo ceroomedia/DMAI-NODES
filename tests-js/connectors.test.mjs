@@ -4,7 +4,10 @@ import {
   Controller,
   SOCKET_GUTTER,
   SOCKET_INSET,
+  SOCKET_PITCH,
+  SOCKET_LABEL_FONT,
   layoutNativeSockets,
+  drawNativeSocketLabels,
 } from "../web/dom.mjs";
 
 class Element extends EventTarget {
@@ -21,6 +24,7 @@ function controller() {
       size: [360, 400],
       inputs: [{ name: "request", type: "DMAI_PROMPT" }],
       outputs: [{ name: "images", type: "IMAGE" }],
+      computeSize() { return [240, 320]; },
       setSize(size) {
         this.size = size;
         this.onResize?.(size);
@@ -53,6 +57,76 @@ test("native socket centres and their 20px hit boxes stay inside the node and ou
       );
     }
   }
+});
+
+test("saved narrow sizes and interactive resizes cannot squash the controls or socket hit targets", async () => {
+  const instance = controller();
+  instance.hydrate = () => {};
+  instance.node.inputs = Array.from({ length: 10 }, (_, i) => ({ name: `input_${i}` }));
+  instance.size(430, 300);
+  const minimum = [...instance.node.size];
+  instance.node.setSize([180, 180]);
+  assert.deepEqual(instance.node.size, minimum);
+  for (let i = 1; i < instance.node.inputs.length; i++) {
+    assert.ok(instance.node.inputs[i].pos[1] - instance.node.inputs[i - 1].pos[1] >= SOCKET_PITCH);
+  }
+  instance.node.size = [220, 180];
+  instance.node.onConfigure();
+  await Promise.resolve();
+  assert.deepEqual(instance.node.size, minimum, "loading a saved size applies the same minimum");
+  assert.equal(instance.node.computeSize()[0], 430 + 2 * SOCKET_GUTTER);
+});
+
+function canvasContext() {
+  const calls = { text: [], boxes: [], saved: 0, restored: 0 };
+  return {
+    calls,
+    save() { calls.saved++; },
+    restore() { calls.restored++; },
+    measureText(text) { return { width: text.length * 8 }; },
+    beginPath() {},
+    roundRect(...args) { calls.boxes.push(args); },
+    fill() {},
+    stroke() {},
+    fillText(...args) { calls.text.push(args); },
+  };
+}
+
+test("every native connector has an English caption outside the DOM and clear of its hit target", () => {
+  const instance = controller();
+  instance.node.inputs.push({ name: "loras", link: 0 }, { name: "clip" });
+  instance.node.outputs.push({ name: "report", links: [12] });
+  instance.size(430, 400);
+  const ctx = canvasContext();
+  instance.node.onDrawForeground(ctx);
+  assert.equal(ctx.font, SOCKET_LABEL_FONT);
+  assert.deepEqual(ctx.calls.text.map(([text]) => text), ["Prompt", "LoRAs", "CLIP", "Images", "Report"]);
+  const slots = [...instance.node.inputs, ...instance.node.outputs];
+  ctx.calls.boxes.forEach(([x, y, width, height], i) => {
+    assert.ok(x + width < 0 || x > instance.node.size[0], "caption stays outside the node body");
+    assert.equal(y + height, slots[i].pos[1] - 10, "caption ends above the native hit target");
+  });
+  assert.equal(ctx.calls.saved, 1);
+  assert.equal(ctx.calls.restored, 1);
+});
+
+test("labels leave socket metadata intact and do not draw for converted widgets or collapsed nodes", () => {
+  const node = {
+    size: [474, 448],
+    inputs: [{ name: "text", type: "STRING", link: null }, { name: "config_json", widget: {}, pos: [10, 14] }],
+    outputs: [{ name: "request", type: "DMAI_PROMPT", links: [3] }],
+  };
+  layoutNativeSockets(node);
+  const original = structuredClone(node);
+  const ctx = canvasContext();
+  drawNativeSocketLabels(node, ctx);
+  assert.deepEqual(ctx.calls.text.map(([text]) => text), ["Text", "Prompt"]);
+  assert.deepEqual(node, original);
+  node.flags = { collapsed: true };
+  const collapsed = canvasContext();
+  drawNativeSocketLabels(node, collapsed);
+  assert.equal(collapsed.calls.saved, 0);
+  assert.equal(collapsed.calls.text.length, 0);
 });
 
 test("hidden JSON input widgets do not consume connector rows", () => {

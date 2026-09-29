@@ -5,17 +5,14 @@ import {
   input,
   select,
   details,
-  saveBlob,
-  statusMessage,
-} from "./dom.mjs";
+} from "./dom.mjs?v=0.2.0";
 import {
   readEngine,
   validateSettings,
   clone,
   mergePresets,
   envelope,
-  uid,
-} from "./core.mjs";
+} from "./core.mjs?v=0.2.0";
 import {
   modelSource,
   modelGroups,
@@ -23,12 +20,13 @@ import {
   parseModelToken,
   profileForSource,
   inventoryName,
-} from "./model-picker.mjs";
+} from "./model-picker.mjs?v=0.2.0";
 
 export class Engine extends Controller {
   constructor(node, context) {
     super(node, "config_json", "Generation Engine", "bolt", context);
-    this.size(365, 480);
+    this.root.classList.add("dmai-engine");
+    this.initializeSize();
     this.wrap("onConnectionsChange", () =>
       queueMicrotask(() => {
         if (!this.disposed && this.value && this.commitControls()) this.build();
@@ -44,6 +42,15 @@ export class Engine extends Controller {
         );
     });
     this.hydrate();
+  }
+  initializeSize() {
+    let height = 700;
+    try {
+      if (readEngine(this.native.value).mode === "enhanced") height = 600;
+    } catch {
+      // hydrate() reports invalid saved data without replacing its value.
+    }
+    this.size(440, height);
   }
   hydrate() {
     if (this.disposed) return;
@@ -77,6 +84,17 @@ export class Engine extends Controller {
       (p) =>
         p.id === this.value.preset_id && p.model.id === this.value.profile_id,
     );
+  }
+  availablePresets() {
+    // The built-in catalog is retained only for saved-workflow compatibility.
+    // New choices in the interface are the JSON settings the owner imported.
+    const presets = this.value.presets.filter(
+      (preset) => preset.model.id === this.value.profile_id,
+    );
+    const current = this.chosen();
+    if (current && !presets.some((preset) => preset.id === current.id))
+      presets.unshift(current);
+    return presets;
   }
   effective() {
     return this.value.mode === "enhanced"
@@ -125,13 +143,15 @@ export class Engine extends Controller {
     if (mode === "enhanced") {
       const preset =
         this.chosen() ??
-        this.presets().find((p) => p.model.id === this.value.profile_id);
-      if (!preset) {
-        this.error(new Error("Import a preset for this profile first."));
-        return;
+        this.value.presets.find((p) => p.model.id === this.value.profile_id);
+      if (preset) {
+        this.value.preset_id = preset.id;
+        this.value.settings = clone(preset.settings);
+      } else {
+        // Enhanced must be reachable before a JSON file exists. Execution
+        // validates the missing preset, while Manual keeps its separate draft.
+        this.value.preset_id = "";
       }
-      this.value.preset_id = preset.id;
-      this.value.settings = clone(preset.settings);
     } else
       this.value.settings = clone(
         this.manualDrafts()[this.value.profile_id] ?? this.effective(),
@@ -150,7 +170,6 @@ export class Engine extends Controller {
     const profile = this.data.profiles.find((p) => p.id === id);
     if (!profile) return false;
     const saved = this.drafts()[id],
-      preset = this.presets().find((p) => p.model.id === id),
       models = {
         diffusion_model: "",
         text_encoder: "",
@@ -167,9 +186,9 @@ export class Engine extends Controller {
       saved
         ? clone(saved)
         : {
-            mode: preset ? "enhanced" : "manual",
-            preset_id: preset?.id ?? "",
-            settings: clone(preset?.settings ?? profile.default_settings),
+            mode: "manual",
+            preset_id: "",
+            settings: clone(profile.default_settings),
             models,
           },
     );
@@ -241,6 +260,22 @@ export class Engine extends Controller {
     });
     return picker.field;
   }
+  fitHeight(profile) {
+    const current = this.node.size?.[1] ?? 0,
+      previousMinimum = Math.max(this.minimumSize()[1], this.node.computeSize?.()?.[1] ?? 0);
+    // Remember an explicit larger size across automatic growth (for example,
+    // a Krea enhancer row), so changing modes cannot erase the user's height.
+    if (this.lastEngineHeight === undefined || Math.abs(current - this.lastEngineHeight) > 2)
+      this.preferredEngineHeight = current > previousMinimum + 2 ? current : undefined;
+    this.minHeight = this.value.mode === "enhanced" ? 600 : profile?.family === "krea2" ? 770 : 700;
+    const minimum = this.minimumSize(),
+      height = Math.max(minimum[1], this.node.computeSize?.()?.[1] ?? 0, this.preferredEngineHeight ?? 0),
+      width = Math.max(minimum[0], this.node.size?.[0] ?? 0);
+    if (height !== current || width !== this.node.size?.[0])
+      this.node.setSize?.([width, height]);
+    this.positionSlots();
+    this.lastEngineHeight = this.node.size?.[1] ?? height;
+  }
   build() {
     this.modelFilesExpanded = this.modelFilesDetails?.open ?? this.modelFilesExpanded;
     this.body.replaceChildren();
@@ -248,14 +283,15 @@ export class Engine extends Controller {
     this.commitSeed = null;
     const profile = this.profile(),
       s = this.effective();
+    this.fitHeight(profile);
     this.body.append(this.modelPicker(profile));
     if (["model", "clip", "vae"].every((name) => this.linked(name)))
       this.body.append(el("div", "dmai-badge", "Connected model · CLIP · VAE"));
     this.modelFiles(profile);
     const mode = el("div", "dmai-segmented dmai-mode");
     for (const [value, label, glyph] of [
-      ["enhanced", "DMAI Enhanced", "spark"],
       ["manual", "Manual", "sliders"],
+      ["enhanced", "DMAI Enhanced", "spark"],
     ]) {
       const b = button(label, glyph, () => this.applyMode(value), true);
       b.setAttribute("aria-pressed", String(this.value.mode === value));
@@ -263,86 +299,8 @@ export class Engine extends Controller {
       mode.append(b);
     }
     this.body.append(mode);
-    const presetRow = el("div", "dmai-preset-row"),
-      presetSelect = select(
-        "Preset",
-        [
-          {
-            value: "",
-            label:
-              this.value.mode === "manual"
-                ? "Custom settings"
-                : "Choose a preset",
-          },
-          ...this.presets()
-            .filter((p) => p.model.id === this.value.profile_id)
-            .map((p) => ({ value: p.id, label: p.name })),
-        ],
-        this.value.mode === "enhanced" ? this.value.preset_id : "",
-      );
-    presetSelect.control.disabled = !this.data;
-    presetSelect.control.addEventListener("change", () => {
-      const p = this.presets().find((p) => p.id === presetSelect.control.value);
-      if (!p) return;
-      if (!this.commitControls()) {
-        presetSelect.control.value =
-          this.value.mode === "enhanced" ? this.value.preset_id : "";
-        return;
-      }
-      if (this.value.mode === "manual")
-        this.manualDrafts()[this.value.profile_id] = clone(this.value.settings);
-      this.value.mode = "enhanced";
-      this.value.preset_id = p.id;
-      this.value.settings = clone(p.settings);
-      this.persist();
-      this.build();
-    });
-    const file = el("input");
-    file.type = "file";
-    file.accept = ".json,application/json";
-    file.hidden = true;
-    file.addEventListener("change", () =>
-      this.guard(async () => {
-        const f = file.files?.[0];
-        if (f) await this.importFile(f);
-        file.value = "";
-      }),
-    );
-    const importButton = button("Import preset JSON", "upload", () =>
-        file.click(),
-      ),
-      exportButton = button("Export preset JSON", "download", () =>
-        this.exportPreset(),
-      );
-    importButton.disabled = !this.data;
-    exportButton.disabled = !profile;
-    presetRow.append(presetSelect.field, importButton, exportButton, file);
-    this.body.append(presetRow);
-    const meta = el("div", "dmai-row dmai-preset-meta"),
-      origin =
-        this.value.mode === "manual"
-          ? "Manual"
-          : this.value.presets.some((p) => p.id === this.value.preset_id)
-            ? "Imported"
-            : "DMAI";
-    meta.append(
-      el("span", "dmai-badge", origin),
-      el(
-        "span",
-        "dmai-muted",
-        `${this.linked("sigmas") ? "External sigmas" : `${s.steps} steps`} · CFG ${s.cfg}`,
-      ),
-    );
-    this.body.append(meta);
     if (this.value.mode === "manual") this.manual(s, profile);
-    else
-      this.body.append(
-        el(
-          "div",
-          "dmai-engine-summary",
-          `${this.samplingSummary(s)}${s.enhancer === "krea2t" ? " · Enhancer" : ""}`,
-        ),
-      );
+    else this.enhanced(s);
     if (this.linked("sampler") || this.linked("sigmas"))
       this.body.append(
         el(
@@ -395,6 +353,72 @@ export class Engine extends Controller {
           "This model profile is not installed. Choose a supported architecture.",
         ),
       );
+  }
+  enhanced(settings) {
+    const panel = el("section", "dmai-enhanced"),
+      preset = this.chosen(),
+      choices = this.availablePresets();
+    panel.setAttribute("aria-label", "DMAI Enhanced settings");
+    if (choices.length > 1) {
+      const picker = select(
+        "DMAI settings",
+        choices.map((entry) => ({ value: entry.id, label: entry.name })),
+        this.value.preset_id,
+      );
+      picker.control.addEventListener("change", () => {
+        if (!this.selectPreset(picker.control.value))
+          picker.control.value = this.value.preset_id;
+      });
+      panel.append(picker.field);
+    } else {
+      const title = el("div", "dmai-enhanced-title", preset?.name ?? "Your DMAI settings");
+      if (preset)
+        title.title = this.value.presets.some((entry) => entry.id === preset.id)
+          ? "Imported settings" : "Saved workflow settings";
+      panel.append(title);
+      if (!preset)
+        panel.append(el("p", "dmai-enhanced-copy", "Upload a DMAI JSON file for this model."));
+    }
+    if (preset) {
+      panel.append(
+        el("div", "dmai-enhanced-summary", `${this.linked("sigmas") ? "Connected sigmas" : `${settings.steps} steps`} · CFG ${settings.cfg}`),
+        el("div", "dmai-enhanced-sampling", this.samplingSummary(settings)),
+      );
+      if (settings.enhancer === "krea2t")
+        panel.append(el("div", "dmai-badge", "Krea enhancer enabled"));
+    }
+    const file = el("input");
+    file.type = "file";
+    file.accept = ".json,application/json";
+    file.hidden = true;
+    file.addEventListener("change", () =>
+      this.guard(async () => {
+        try {
+          const selected = file.files?.[0];
+          if (selected) await this.importFile(selected);
+        } finally {
+          file.value = "";
+        }
+      }),
+    );
+    const actions = el("div", "dmai-enhanced-actions"),
+      upload = button("Upload JSON", "upload", () => file.click(), true);
+    upload.disabled = !this.data;
+    actions.append(upload, file);
+    if (this.value.presets.length)
+      actions.append(button("Manage imported settings", "layers", () => this.managePresets()));
+    panel.append(actions);
+    this.body.append(panel);
+  }
+  selectPreset(id) {
+    const preset = this.availablePresets().find((entry) => entry.id === id);
+    if (!preset || !this.commitControls()) return false;
+    this.value.mode = "enhanced";
+    this.value.preset_id = preset.id;
+    this.value.settings = clone(preset.settings);
+    this.persist();
+    this.build();
+    return true;
   }
   modelFiles(profile) {
     const advanced = details("Model files");
@@ -477,15 +501,6 @@ export class Engine extends Controller {
         true,
       ),
     );
-    if (this.value.presets.length)
-      advanced.body.append(
-        button(
-          "Manage imported presets",
-          "layers",
-          () => this.managePresets(),
-          true,
-        ),
-      );
     if (profile?.default_guidance !== undefined && !this.linked("positive"))
       advanced.body.append(
         el(
@@ -498,7 +513,7 @@ export class Engine extends Controller {
   }
   manual(settings, profile) {
     const grid = el("div", "dmai-settings");
-    const controls = {};
+    const controls = {}, fields = {};
     for (const [name, label, type, min, max, step] of [
       ["steps", "Steps", "number", 1, 150, 1],
       ["cfg", "CFG", "number", 0, 30, 0.1],
@@ -508,7 +523,7 @@ export class Engine extends Controller {
       Object.assign(f.control, { min, max, step });
       f.field.hidden = this.linked("sigmas") && name !== "cfg";
       controls[name] = f.control;
-      grid.append(f.field);
+      fields[name] = f.field;
     }
     for (const [name, label, items] of [
       ["sampler", "Sampler", this.data?.samplers ?? [settings.sampler]],
@@ -520,12 +535,16 @@ export class Engine extends Controller {
       ],
     ]) {
       const f = select(label, items, settings[name]);
+      if (name === "sampler" || name === "enhancer")
+        f.field.classList.add("dmai-field-wide");
       f.field.hidden =
         (name === "sampler" && this.linked("sampler")) ||
-        (name === "scheduler" && this.linked("sigmas"));
+        (name === "scheduler" && this.linked("sigmas")) ||
+        (name === "enhancer" && profile?.family !== "krea2");
       controls[name] = f.control;
-      grid.append(f.field);
+      fields[name] = f.field;
     }
+    grid.append(...["steps", "cfg", "sampler", "scheduler", "denoise", "enhancer"].map((name) => fields[name]));
     this.commitManual = () => {
       try {
         const next = validateSettings({
@@ -555,7 +574,10 @@ export class Engine extends Controller {
     this.body.append(grid);
   }
   async importFile(file) {
+    if (this.value.mode !== "enhanced")
+      throw new Error("Switch to DMAI Enhanced to upload JSON settings.");
     if (!this.commitControls()) return;
+    const profileId = this.value.profile_id;
     if (file.size > 128 * 1024)
       throw new Error("Preset files must be 128 KiB or smaller.");
     let payload;
@@ -570,12 +592,14 @@ export class Engine extends Controller {
       body: JSON.stringify(payload),
     });
     if (this.disposed || !this.commitControls()) return;
+    if (this.value.mode !== "enhanced" || this.value.profile_id !== profileId)
+      throw new Error("Engine mode or model changed during upload. Upload the JSON again in DMAI Enhanced.");
     const presets = mergePresets(
       this.value.presets,
       result.presets,
       this.data.presets,
     );
-    const first = result.presets[0];
+    const first = result.presets.find((preset) => preset.model.id === profileId) ?? result.presets[0];
     this.value.presets = presets;
     if (this.value.profile_id !== first.model.id)
       this.changeProfile(first.model.id);
@@ -625,49 +649,5 @@ export class Engine extends Controller {
       }
     };
     draw();
-  }
-  exportPreset() {
-    if (!this.commitControls()) return;
-    const d = this.show("Export preset"),
-      name = input("Preset name", "text", "My settings"),
-      message = el("p", "dmai-status"),
-      save = button(
-        "Download JSON",
-        "download",
-        () =>
-          this.guard(async () => {
-            try {
-              const p = this.profile(),
-                payload = {
-                  schema_version: 1,
-                  id: `custom-${uid()}`,
-                  name: name.control.value,
-                  model: { id: p.id, label: p.label, family: p.family },
-                  settings: clone(this.effective()),
-                };
-              const result = await envelope(
-                this.context.api,
-                "/presets/validate",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload),
-                },
-              );
-              saveBlob(
-                new Blob([JSON.stringify(result.presets[0], null, 2) + "\n"], {
-                  type: "application/json",
-                }),
-                `${payload.id}.json`,
-              );
-              d.root.close();
-            } catch (error) {
-              statusMessage(message, error.message, true);
-            }
-          }),
-        true,
-      );
-    save.classList.add("dmai-primary");
-    d.body.append(name.field, message, save);
   }
 }

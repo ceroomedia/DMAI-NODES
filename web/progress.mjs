@@ -1,4 +1,4 @@
-import { PROMPTER_TYPE } from "./workflow-migration.mjs";
+import { PROMPTER_TYPE } from "./workflow-migration.mjs?v=0.2.0";
 
 // Job identity comes from the submitted API graph, never the current selection.
 const IDLE = Object.freeze({ phase: "idle", percent: 0 });

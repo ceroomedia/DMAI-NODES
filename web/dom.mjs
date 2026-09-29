@@ -1,10 +1,35 @@
-import { icon } from "./icons.mjs";
+import { icon } from "./icons.mjs?v=0.2.0";
 
 // Comfy's DOM wrapper receives pointer events across its whole rectangle. A
 // real widget margin leaves canvas space for native socket hit targets; CSS
 // padding on the panel alone would still leave the wrapper over the sockets.
 export const SOCKET_GUTTER = 22;
 export const SOCKET_INSET = 12;
+export const SOCKET_PITCH = 36;
+export const SOCKET_LABEL_FONT = '500 14px "DMAI Inter", "Segoe UI", sans-serif';
+
+const SOCKET_LABELS = {
+  request: "Prompt",
+  text: "Text",
+  loras: "LoRAs",
+  model: "Model",
+  clip: "CLIP",
+  vae: "VAE",
+  sampler: "Sampler",
+  sigmas: "Sigmas",
+  latent: "Latent",
+  positive: "Positive",
+  negative: "Negative",
+  images: "Images",
+  report: "Report",
+};
+
+const nativeSockets = (slots) => (slots ?? []).filter((slot) => !slot.widget);
+
+export function minimumSocketHeight(node) {
+  const count = Math.max(nativeSockets(node.inputs).length, nativeSockets(node.outputs).length);
+  return count ? 75 + (count - 1) * SOCKET_PITCH + 40 : 0;
+}
 
 export function layoutNativeSockets(node) {
   const width = node.size?.[0] ?? 360;
@@ -15,7 +40,7 @@ export function layoutNativeSockets(node) {
   ]) {
     // Widget-backed inputs keep Comfy's own conversion, visibility and layout.
     // In particular, our hidden JSON widgets must not consume a socket row.
-    const sockets = slots.filter((slot) => !slot.widget);
+    const sockets = nativeSockets(slots);
     const top = 75;
     const bottom = Math.max(top, height - 40);
     sockets.forEach((slot, index) => {
@@ -27,6 +52,40 @@ export function layoutNativeSockets(node) {
       if (slot.pos?.[0] !== x || slot.pos?.[1] !== y) slot.pos = [x, y];
     });
   }
+}
+
+// These captions are paint only. The dots, hit targets and links remain Comfy's
+// native sockets. Drawing just outside the card leaves its controls full width;
+// lifting the caption above the dot also leaves the wire and drag target clear.
+export function drawNativeSocketLabels(node, ctx) {
+  if (node.flags?.collapsed || node.collapsed || !ctx) return;
+  const width = node.size?.[0] ?? 360;
+  ctx.save();
+  ctx.font = SOCKET_LABEL_FONT;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  ctx.lineWidth = 1;
+  for (const [slots, output] of [[node.inputs, false], [node.outputs, true]]) {
+    for (const slot of nativeSockets(slots)) {
+      if (!slot.pos) continue;
+      const label = SOCKET_LABELS[slot.name] ?? slot.label ?? slot.name;
+      if (!label) continue;
+      const labelWidth = ctx.measureText(label).width;
+      const boxWidth = labelWidth + 16;
+      const x = output ? width + 8 : -8 - boxWidth;
+      const y = slot.pos[1] - 34;
+      const connected = output ? Boolean(slot.links?.length) : slot.link != null;
+      ctx.fillStyle = "#191d22";
+      ctx.strokeStyle = connected ? "#4e6543" : "#343b46";
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxWidth, 24, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = connected ? "#d9edc2" : "#d5dbe4";
+      ctx.fillText(label, x + 8, y + 12);
+    }
+  }
+  ctx.restore();
 }
 
 export const el = (tag, className = "", text) => {
@@ -179,8 +238,22 @@ export class Controller {
       },
     );
     this.widget.serialize = false;
-    this.wrap("onConfigure", () => queueMicrotask(() => this.hydrate()));
+    const computeSize = this.node.computeSize?.bind(this.node);
+    if (computeSize) {
+      this.node.computeSize = (...args) => {
+        const size = computeSize(...args);
+        const minimum = this.minimumSize();
+        size[0] = Math.max(size[0], minimum[0]);
+        size[1] = Math.max(size[1], minimum[1]);
+        return size;
+      };
+    }
+    this.wrap("onConfigure", () => queueMicrotask(() => {
+      this.positionSlots();
+      this.hydrate();
+    }));
     this.wrap("onDrawBackground", () => this.positionSlots());
+    this.wrap("onDrawForeground", (ctx) => drawNativeSocketLabels(this.node, ctx));
     this.wrap("onResize", () => this.positionSlots());
     this.wrap("onRemoved", () => this.dispose());
     const oldRemove = this.widget.onRemove?.bind(this.widget);
@@ -207,14 +280,29 @@ export class Controller {
     };
   }
   size(width, height) {
+    this.minWidth = width;
     this.minHeight = height;
+    const minimum = this.minimumSize();
     this.node.setSize?.([
-      Math.max(width + SOCKET_GUTTER * 2, this.node.size?.[0] ?? 0),
-      Math.max(height + SOCKET_GUTTER * 2 + 4, this.node.size?.[1] ?? 0),
+      Math.max(minimum[0], this.node.size?.[0] ?? 0),
+      Math.max(minimum[1], this.node.size?.[1] ?? 0),
     ]);
     this.positionSlots();
   }
+  minimumSize() {
+    return [
+      (this.minWidth ?? 0) + SOCKET_GUTTER * 2,
+      Math.max((this.minHeight ?? 0) + SOCKET_GUTTER * 2 + 4, minimumSocketHeight(this.node)),
+    ];
+  }
   positionSlots() {
+    const minimum = this.minimumSize();
+    const size = this.node.size ?? minimum;
+    if (size[0] < minimum[0] || size[1] < minimum[1]) {
+      // Assign through LiteGraph's size setter so its DOM layout store updates,
+      // without recursively dispatching onResize or adding a history edit.
+      this.node.size = [Math.max(size[0], minimum[0]), Math.max(size[1], minimum[1])];
+    }
     layoutNativeSockets(this.node);
   }
   set(value) {

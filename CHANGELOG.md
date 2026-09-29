@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 - 2026-09-29
+
+- Refresh the Slate interface with larger Inter text, roomier controls, a larger prompt field and clearer section spacing.
+- Use two-row LoRA cards with full filenames, visible order, enable/edit actions and independently editable Model and CLIP strengths. Keep drag, arrow and keyboard reordering.
+- Add readable captions outside the native Canvas socket dots and enforce minimum node dimensions so controls and ports remain usable.
+- Start new Engines and all starter workflows in Manual, with enhancement disabled. Keep saved workflow settings and existing model adapters.
+- Show JSON upload only in DMAI Enhanced. New preset choices come from imported settings; historical built-in presets remain resolvable for saved workflows. Remove preset export from the interface.
+- Preserve manual drafts when switching modes. An Enhanced Engine without a selected preset asks for a DMAI JSON upload or a switch back to Manual.
+- Keep the conflict-free `DMAINodesPrompter` ID and legacy workflow migration introduced in 0.1.3.
+
 ## 0.1.3 — 2026-09-29
 
 - Give the new Prompter the unique internal ID `DMAINodesPrompter`, keeping its visible name **DMAI Prompter**. Older DMAI Suite and standalone Prompter installations can keep their original node and frontend hooks.

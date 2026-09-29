@@ -94,6 +94,8 @@ def parse_engine_config(value):
     if any(entry["id"] in builtin_ids for entry in presets):
         raise ValueError("Imported presets cannot replace built-in preset IDs. Use a new ID.")
     if value["mode"] == "enhanced":
+        if not value["preset_id"]:
+            raise ValueError("Upload a DMAI JSON preset in DMAI Enhanced, or switch the Engine to Manual.")
         preset, _ = resolve_preset(value["preset_id"], profile["id"], presets)
         settings = preset["settings"]
     return {"schema_version": 1, "profile_id": profile["id"], "mode": value["mode"],

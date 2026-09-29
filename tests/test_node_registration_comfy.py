@@ -178,6 +178,18 @@ class RealComfyRegistrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(info["input"]["optional"]["text"][0], "STRING")
         self.assertTrue(info["input"]["optional"]["text"][1]["forceInput"])
 
+    def test_engine_schema_defaults_to_free_manual_settings(self):
+        from dmai_nodes.nodes import DMAIGenerationEngine
+        from dmai_nodes.engine import parse_engine_config
+
+        info = DMAIGenerationEngine.GET_NODE_INFO_V1()
+        config = json.loads(info["input"]["required"]["config_json"][1]["default"])
+        self.assertEqual(config["mode"], "manual")
+        self.assertEqual(config["preset_id"], "")
+        self.assertEqual(config["presets"], [])
+        self.assertEqual(config["settings"]["enhancer"], "none")
+        self.assertEqual(parse_engine_config(config)["settings"], config["settings"])
+
     def test_prompter_json_and_optional_text_keep_validation(self):
         requested = {"schema_version": 1, "prompt": "  local prompt  ", "negative_prompt": "blur",
                      "width": 1536, "height": 1024, "count": 8}

@@ -13,7 +13,7 @@ python custom_nodes/DMAI-NODES/tools/run_workflow.py \
   --count 2 --seed 481516 --gallery website-demo --wait
 ```
 
-Run the command from your ComfyUI directory using its Python environment. The default example uses Krea Original and its optional enhancer. Use `--workflow` for a different included API example. The helper expects starter node IDs `1` (Prompter), `3` (Engine) and `4` (Gallery); adapt these lookups before using a workflow with different IDs. For the SDXL example, `--checkpoint` can set the installed checkpoint filename. Edit model selections in other API examples to match your catalog. This command queues real generation on your own server.
+Run the command from your ComfyUI directory using its Python environment. The default example uses Krea 2 Turbo in Manual with enhancement `none`; it does not require the optional Krea enhancer. Use `--workflow` for a different included API example. The helper expects starter node IDs `1` (Prompter), `3` (Engine) and `4` (Gallery); adapt these lookups before using a workflow with different IDs. For the SDXL example, `--checkpoint` can set the installed checkpoint filename. Edit model selections in other API examples to match your catalog. This command queues real generation on your own server.
 
 1. `POST /prompt` with `{"prompt": <API workflow>, "client_id": "<unique ID>"}`.
 2. Keep the returned `prompt_id`.
@@ -24,9 +24,17 @@ In a completed starter job, Gallery metadata is at `history[prompt_id]["outputs"
 
 Use seed strings for the full unsigned 64-bit range; JavaScript numbers cannot represent all of it exactly. Each image's exact seed is recorded in the Engine report. The CLI timeout only stops waiting; it does not cancel the job.
 
+## Engine sampling modes
+
+Version 0.2.0 starts new Engines and all starter templates in `"mode": "manual"`, with `"preset_id": ""` and `"enhancer": "none"` inside `settings`. Manual executes the validated `settings` values. Existing saved configs retain their mode and settings.
+
+For DMAI Enhanced, use `"mode": "enhanced"`, a selected `preset_id`, and the matching validated preset in the Engine's `presets` array. Presets are data, not uploaded executable code. The frontend exposes **Upload JSON** only in Enhanced and has no preset export button; headless clients supply the same configuration directly. See [preset format and limits](MODELS.md#manual-or-dmai-enhanced).
+
+An Enhanced config with an empty `preset_id` fails with an actionable error: upload a DMAI JSON preset or switch to Manual. The server continues resolving historical built-in preset IDs for saved workflows and API templates. The `bootstrap` response retains that catalog for compatibility; its presence does not mean the frontend offers those presets as new choices. Current node IDs, request types, API routes and JSON schema versions are unchanged from 0.1.3.
+
 ## Prompter ID migration
 
-Version 0.1.3 uses `DMAINodesPrompter` as the Prompter's API `class_type`. The request configuration, `DMAI_PROMPT` output and Engine connections keep the same contracts. Older DMAI packages still own `DMAIPrompter`; the server intentionally has no alias that could overwrite them.
+Since version 0.1.3, the Prompter's API `class_type` is `DMAINodesPrompter`. The request configuration, `DMAI_PROMPT` output and Engine connections keep the same contracts. Older DMAI packages still own `DMAIPrompter`; the server intentionally has no alias that could overwrite them.
 
 Use the updated starter API files for new integrations. The included `run_workflow.py` converts identifiable 0.1.0-0.1.2 DMAI NODES Prompters in memory before submitting and leaves the source file intact. Direct `/prompt` callers should migrate their template first:
 
@@ -80,7 +88,7 @@ Routes are relative to ComfyUI's base URL. JSON responses use `{"ok": true, "dat
 | Method | Route | Purpose |
 | --- | --- | --- |
 | GET | `/dmai-nodes/v1/health` | Package version and capability flags |
-| GET | `/dmai-nodes/v1/bootstrap` | Model profiles, installed files, LoRAs, presets, runtime samplers and schedulers |
+| GET | `/dmai-nodes/v1/bootstrap` | Model profiles, installed files, LoRAs, historical preset catalog, runtime samplers and schedulers |
 | POST | `/dmai-nodes/v1/presets/validate` | Validate a single JSON preset or pack |
 | GET | `/dmai-nodes/v1/galleries/{gallery_id}?offset=0&limit=60` | Saved images, total and snapshot watermark |
 | GET | `/dmai-nodes/v1/images/{image_id}` | Original PNG |

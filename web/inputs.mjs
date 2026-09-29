@@ -5,7 +5,7 @@ import {
   input,
   details,
   statusMessage,
-} from "./dom.mjs";
+} from "./dom.mjs?v=0.2.0";
 import {
   RATIOS,
   dimensions,
@@ -14,8 +14,8 @@ import {
   readManifest,
   moveEntry,
   uid,
-} from "./core.mjs";
-import { ProgressView, progressPresentation } from "./progress-view.mjs";
+} from "./core.mjs?v=0.2.0";
+import { ProgressView, progressPresentation } from "./progress-view.mjs?v=0.2.0";
 
 export class Prompter extends Controller {
   constructor(node, context) {
@@ -26,7 +26,7 @@ export class Prompter extends Controller {
     this.root.append(scroll);
     this.progress = { phase: "idle", percent: 0 };
     this.progressView = new ProgressView(this.root);
-    this.size(360, 400);
+    this.size(460, 690);
     this.hydrate();
     this.stopProgress = context.watchProgress?.(node, (state) => {
       if (!this.disposed) this.updateProgress(state);
@@ -55,14 +55,24 @@ export class Prompter extends Controller {
       this.value.prompt = prompt.value;
       this.persist();
     });
-    this.body.append(prompt);
+    const promptField = el("label", "dmai-prompt-field");
+    promptField.append(el("span", "dmai-section-label", "Prompt"), prompt);
+    this.body.append(promptField);
+    const settings = el("div", "dmai-prompt-settings"),
+      format = el("div", "dmai-format-section");
+    format.append(el("span", "dmai-section-label", "Aspect ratio"));
     this.ratioRow = el("div", "dmai-ratios");
+    this.ratioRow.setAttribute("role", "group");
+    this.ratioRow.setAttribute("aria-label", "Aspect ratio");
     for (const ratio of ["1:1", "4:5", "9:16", "16:9"])
       this.ratioRow.append(this.ratioButton(ratio));
-    this.ratioRow.append(
-      button("All 19 aspect ratios", "more", () => this.showRatios()),
-    );
-    this.body.append(this.ratioRow);
+    const moreRatios = button("More", "more", () => this.showRatios(), true);
+    moreRatios.classList.add("dmai-ratio-more");
+    moreRatios.setAttribute("aria-label", "All 19 aspect ratios");
+    moreRatios.title = "All 19 aspect ratios";
+    this.ratioRow.append(moreRatios);
+    format.append(this.ratioRow);
+    settings.append(format);
     const resolutionRow = el("div", "dmai-resolution"),
       group = el("div", "dmai-segmented");
     this.resolutionButtons = {};
@@ -78,9 +88,12 @@ export class Prompter extends Controller {
     }
     this.dimensions = el("output", "dmai-dimensions");
     resolutionRow.append(group, this.dimensions);
-    this.body.append(resolutionRow);
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Resolution");
+    this.dimensions.setAttribute("aria-label", "Image dimensions");
+    settings.append(resolutionRow);
     const countRow = el("div", "dmai-row dmai-count");
-    countRow.append(el("span", "dmai-muted", "Images"));
+    countRow.append(el("span", "dmai-section-label", "Images"));
     this.less = button("One fewer image", "minus", () => this.count(-1));
     this.more = button("One more image", "plus", () => this.count(1));
     this.countOutput = el("output");
@@ -88,8 +101,9 @@ export class Prompter extends Controller {
     const stepper = el("div", "dmai-stepper");
     stepper.append(this.less, this.countOutput, this.more);
     countRow.append(stepper);
-    this.body.append(countRow);
-    const advanced = details();
+    settings.append(countRow);
+    this.body.append(settings);
+    const advanced = details("Negative prompt");
     const negative = el("textarea", "dmai-negative");
     negative.value = this.value.negative_prompt;
     negative.placeholder = "Negative prompt";
@@ -279,6 +293,7 @@ export class Prompter extends Controller {
 export class LoRAStack extends Controller {
   constructor(node, context) {
     super(node, "manifest_json", "LoRA Loader", "layers", context);
+    this.root.classList.add("dmai-lora");
     const serialize = this.native.serializeValue?.bind(this.native);
     this.native.serializeValue = (...args) => {
       if (!this.syncStrengths())
@@ -288,7 +303,7 @@ export class LoRAStack extends Controller {
       readManifest(this.native.value);
       return serialize ? serialize(...args) : this.native.value;
     };
-    this.size(390, 275);
+    this.size(480, 520);
     this.hydrate();
   }
   hydrate() {
@@ -304,26 +319,28 @@ export class LoRAStack extends Controller {
   persist() {
     this.set(this.value);
   }
-  updateStrength(id, text) {
+  updateStrength(id, text, channel = "model") {
+    if (!["model", "clip"].includes(channel)) return false;
     const value = text.trim() === "" ? NaN : Number(text);
     if (!Number.isFinite(value) || value < -20 || value > 20) {
       this.error(
         new Error(
-          "Strength must be from −20 to 20. Correct it before queueing.",
+          `${channel === "clip" ? "CLIP" : "Model"} strength must be from −20 to 20. Correct it before queueing.`,
         ),
       );
       return false;
     }
     const entry = this.value.entries.find((item) => item.id === id);
     if (!entry) return false;
-    entry.strength_model = value;
+    entry[`strength_${channel}`] = value;
     this.persist();
     this.note();
+    this.updateSummary();
     return true;
   }
   syncStrengths() {
     for (const control of this.body.querySelectorAll(".dmai-strength")) {
-      if (!this.updateStrength(control.dataset.entryId, control.value)) {
+      if (!this.updateStrength(control.dataset.entryId, control.value, control.dataset.strength ?? "model")) {
         control.setAttribute("aria-invalid", "true");
         control.focus();
         return false;
@@ -331,6 +348,34 @@ export class LoRAStack extends Controller {
       control.removeAttribute("aria-invalid");
     }
     return true;
+  }
+  updateSummary() {
+    const count = this.value.entries.filter(
+      (entry) => entry.enabled && (entry.strength_model !== 0 || entry.strength_clip !== 0),
+    ).length;
+    if (this.summary) this.summary.textContent = `${count} active · top to bottom`;
+  }
+  strengthField(entry, channel) {
+    const label = channel === "clip" ? "CLIP" : "Model",
+      field = el("label", "dmai-field dmai-lora-strength-field"),
+      strength = el("input", "dmai-strength");
+    strength.type = "number";
+    strength.min = -20;
+    strength.max = 20;
+    strength.step = 0.05;
+    strength.value = entry[`strength_${channel}`];
+    strength.dataset.entryId = entry.id;
+    strength.dataset.strength = channel;
+    strength.setAttribute("aria-label", `${label} strength for ${entry.name}`);
+    const commitStrength = () => {
+      if (this.updateStrength(entry.id, strength.value, channel))
+        strength.removeAttribute("aria-invalid");
+      else strength.setAttribute("aria-invalid", "true");
+    };
+    strength.addEventListener("input", commitStrength);
+    strength.addEventListener("change", commitStrength);
+    field.append(el("span", "", label), strength);
+    return field;
   }
   move(id, to) {
     if (!this.syncStrengths()) return;
@@ -348,11 +393,18 @@ export class LoRAStack extends Controller {
   build() {
     this.body.replaceChildren();
     const list = el("div", "dmai-lora-list");
+    list.setAttribute("role", "list");
     list.setAttribute("aria-label", "Ordered LoRA stack");
     let dragged = null;
     this.value.entries.forEach((entry, index) => {
       const row = el("div", `dmai-nodes-lora-row${entry.enabled ? "" : " dmai-off"}`);
       row.dataset.entryId = entry.id;
+      row.setAttribute("role", "listitem");
+      const main = el("div", "dmai-lora-main"),
+        controls = el("div", "dmai-lora-controls"),
+        actions = el("div", "dmai-lora-actions"),
+        order = el("span", "dmai-nodes-lora-order", String(index + 1).padStart(2, "0"));
+      order.setAttribute("aria-label", `Position ${index + 1}`);
       const grip = button(`Reorder ${entry.name}; Alt and arrow keys`, "grip");
       grip.classList.add("dmai-grip");
       grip.draggable = true;
@@ -390,31 +442,9 @@ export class LoRAStack extends Controller {
         dragged = null;
       });
       const copy = el("div", "dmai-lora-copy"),
-        title = el("span", "dmai-nodes-lora-name", entry.name.split(/[\\/]/).pop());
+        title = el("span", "dmai-nodes-lora-name", entry.name);
       title.title = entry.name;
-      copy.append(
-        title,
-        el(
-          "span",
-          "dmai-muted",
-          `${String(index + 1).padStart(2, "0")} · CLIP ${entry.strength_clip}`,
-        ),
-      );
-      const strength = el("input", "dmai-strength");
-      strength.type = "number";
-      strength.min = -20;
-      strength.max = 20;
-      strength.step = 0.05;
-      strength.value = entry.strength_model;
-      strength.dataset.entryId = entry.id;
-      strength.setAttribute("aria-label", `Model strength for ${entry.name}`);
-      const commitStrength = () => {
-        if (this.updateStrength(entry.id, strength.value))
-          strength.removeAttribute("aria-invalid");
-        else strength.setAttribute("aria-invalid", "true");
-      };
-      strength.addEventListener("input", commitStrength);
-      strength.addEventListener("change", commitStrength);
+      copy.append(title);
       const toggle = button(
         `${entry.enabled ? "Disable" : "Enable"} ${entry.name}`,
         "power",
@@ -427,6 +457,8 @@ export class LoRAStack extends Controller {
       );
       toggle.setAttribute("aria-pressed", String(entry.enabled));
       const arrows = el("div", "dmai-reorder");
+      arrows.setAttribute("role", "group");
+      arrows.setAttribute("aria-label", `Order for ${entry.name}`);
       const up = button(`Move ${entry.name} up`, "up", () =>
           this.move(entry.id, index - 1),
         ),
@@ -439,45 +471,49 @@ export class LoRAStack extends Controller {
       const edit = button(`Edit ${entry.name}`, "sliders", () =>
         this.edit(entry),
       );
-      row.append(grip, copy, strength, toggle, arrows, edit);
+      actions.append(toggle, edit);
+      main.append(grip, order, copy, actions);
+      controls.append(this.strengthField(entry, "model"), this.strengthField(entry, "clip"), arrows);
+      row.append(main, controls);
       list.append(row);
     });
     if (!this.value.entries.length)
       list.append(el("div", "dmai-empty", "Add a LoRA to build your stack."));
-    this.body.append(
-      list,
-      button("Add LoRA", "plus", () => this.guard(() => this.library()), true),
-    );
-    const count = this.value.entries.filter(
-      (e) => e.enabled && (e.strength_model !== 0 || e.strength_clip !== 0),
-    ).length;
-    this.body.append(
-      el("div", "dmai-footnote", `${count} selected · top to bottom`),
-    );
+    const add = button("Add LoRA", "plus", () => this.guard(() => this.library()), true);
+    add.classList.add("dmai-nodes-lora-add");
+    this.summary = el("div", "dmai-footnote");
+    this.body.append(list, add, this.summary);
+    this.updateSummary();
   }
   edit(entry) {
     if (!this.syncStrengths()) return;
     const d = this.show("LoRA settings"),
-      field = input("CLIP strength", "number", entry.strength_clip);
-    field.control.min = -20;
-    field.control.max = 20;
-    field.control.step = 0.05;
+      strengths = el("div", "dmai-lora-dialog-strengths"),
+      model = input("Model strength", "number", entry.strength_model),
+      clip = input("CLIP strength", "number", entry.strength_clip);
+    for (const field of [model, clip]) {
+      field.control.min = -20;
+      field.control.max = 20;
+      field.control.step = 0.05;
+    }
+    strengths.append(model.field, clip.field);
     const message = el("p", "dmai-status"),
       apply = button(
         "Apply",
         "check",
         () => {
-          const n =
-            field.control.value === "" ? NaN : Number(field.control.value);
-          if (!Number.isFinite(n) || n < -20 || n > 20) {
+          const values = [model, clip].map((field) =>
+            field.control.value.trim() === "" ? NaN : Number(field.control.value),
+          );
+          if (values.some((value) => !Number.isFinite(value) || value < -20 || value > 20)) {
             statusMessage(
               message,
-              "CLIP strength must be from −20 to 20.",
+              "Model and CLIP strength must each be from −20 to 20.",
               true,
             );
             return;
           }
-          entry.strength_clip = n;
+          [entry.strength_model, entry.strength_clip] = values;
           this.persist();
           this.build();
           d.root.close();
@@ -499,7 +535,7 @@ export class LoRAStack extends Controller {
       );
     d.body.append(
       el("p", "dmai-filename", entry.name),
-      field.field,
+      strengths,
       message,
       apply,
       remove,

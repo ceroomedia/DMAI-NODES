@@ -7,7 +7,7 @@ import shutil
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
-VERSION="0.1.3"
+VERSION="0.2.0"
 ROOT_FILES={"__init__.py","README.md","LICENSE","pyproject.toml","requirements.txt","THIRD_PARTY_NOTICES.md","CHANGELOG.md","release.json"}
 DIRECTORIES={"dmai_nodes","web","docs","resources","licenses","workflows"}
 FORBIDDEN={".git","__pycache__",".validation","node_modules","dist"}

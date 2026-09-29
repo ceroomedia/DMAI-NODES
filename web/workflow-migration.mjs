@@ -1,4 +1,4 @@
-import { readPrompt } from "./core.mjs";
+import { readPrompt } from "./core.mjs?v=0.2.0";
 
 export const PROMPTER_TYPE = "DMAINodesPrompter";
 const PREVIEW_PROMPTER_TYPE = "DMAIPrompter";

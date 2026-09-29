@@ -1,10 +1,11 @@
-import { Controller, el, button, saveBlob } from "./dom.mjs";
-import { API, envelope, binary, selectionBody, uid } from "./core.mjs";
+import { Controller, el, button, saveBlob } from "./dom.mjs?v=0.2.0";
+import { API, envelope, binary, selectionBody, uid } from "./core.mjs?v=0.2.0";
 
 export class Gallery extends Controller {
   constructor(node, context) {
     super(node, "gallery_id", "Gallery", "grid", context);
-    this.size(465, 500);
+    this.root.classList.add("dmai-gallery");
+    this.size(760, 570);
     this.items = [];
     this.total = 0;
     this.watermark = 0;

@@ -1,11 +1,11 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { envelope } from "./core.mjs";
-import { Prompter, LoRAStack } from "./inputs.mjs";
-import { Engine } from "./engine.mjs";
-import { Gallery } from "./gallery.mjs";
-import { GenerationProgress } from "./progress.mjs";
-import { PROMPTER_TYPE, migratePreviewPrompters } from "./workflow-migration.mjs";
+import { envelope } from "./core.mjs?v=0.2.0";
+import { Prompter, LoRAStack } from "./inputs.mjs?v=0.2.0";
+import { Engine } from "./engine.mjs?v=0.2.0";
+import { Gallery } from "./gallery.mjs?v=0.2.0";
+import { GenerationProgress } from "./progress.mjs?v=0.2.0";
+import { PROMPTER_TYPE, migratePreviewPrompters } from "./workflow-migration.mjs?v=0.2.0";
 
 const controllers = new WeakMap();
 const types = {
@@ -74,7 +74,7 @@ app.registerExtension({
   name: "DMAI.Nodes.Slate",
   setup() {
     progress.start();
-    const href = new URL("./nodes.css", import.meta.url).href;
+    const href = new URL("./nodes.css?v=0.2.0", import.meta.url).href;
     if (!document.querySelector("link[data-dmai-nodes]")) {
       const link = document.createElement("link");
       link.rel = "stylesheet";

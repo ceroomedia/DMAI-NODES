@@ -137,6 +137,20 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(result["settings"], get_builtin_presets()[0]["settings"])
         self.assertEqual(value["settings"]["steps"], 12)
 
+    def test_enhanced_without_upload_has_an_actionable_error(self):
+        value = config()
+        value["mode"] = "enhanced"
+        with self.assertRaisesRegex(ValueError, "Upload a DMAI JSON preset.*or switch.*Manual"):
+            engine.parse_engine_config(value)
+
+    def test_imported_enhanced_settings_keep_legacy_preset_resolution(self):
+        value = config()
+        preset = deepcopy(get_builtin_presets()[0])
+        preset.update(id="dmai-imported-settings", name="My DMAI settings")
+        preset["settings"].update(steps=18, enhancer="none")
+        value.update(mode="enhanced", preset_id=preset["id"], presets=[preset])
+        self.assertEqual(engine.parse_engine_config(value)["settings"], preset["settings"])
+
     def test_imports_cannot_enable_unknown_adapters_or_shadow_presets(self):
         value = config()
         value["presets"] = [get_builtin_presets()[0]]

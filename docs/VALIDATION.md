@@ -1,6 +1,20 @@
-# Validation — 0.1.3 preview
+# Validation — 0.2.0 preview
 
-Updated on 2026-09-29. This release has working ComfyUI registration, CPU contract tests and real local API checks. GPU image generation is still pending. The coexistence checks below were added for 0.1.3; earlier Gallery, model-picker and connector observations were made on 2026-09-28.
+Updated on 2026-09-29. This release has working ComfyUI registration, CPU contract tests and real local API checks. GPU image generation is still pending. The 0.2.0 interface checks below were made on 2026-09-29. Earlier Gallery and sampling observations retain their original scope.
+
+## 0.2.0 interface and Manual defaults
+
+- New and starter Engines use Manual with enhancement `none`. CPU schema and engine regressions confirm the defaults and the actionable empty-Enhanced error. Existing selected legacy presets still resolve.
+- In the real Canvas frontend with the older DMAI Suite also installed, Manual displayed no preset selector, upload or export. Switching to Enhanced exposed Upload JSON. A local QA JSON imported successfully through the actual file chooser and validation route, showing 28 steps. Returning to Manual restored the edited 24-step draft.
+- DPM++ 2M and Karras selections, the imported settings and the manual draft survived workflow save/reload. A native Prompter-to-Engine drag recreated the link; the saved graph contained the new link ID with unchanged port types.
+- Inline LoRA CLIP strength changed from 0.4 to 0.3, independently of Model strength 0.65. Moving that LoRA to position 2 retained both values. Regression tests also cover invalid CLIP drafts blocking reorder/queue serialization.
+- Canvas captions identify native sockets at 14 px. Connector tests cover hit-target clearance, minimum dimensions after loading/resizing, caption geometry, connected metadata and collapsed nodes.
+- The rendered interface was inspected at 70% canvas zoom. Prompter Generate and LoRA Add remain visible at the new default sizes. Gallery uses a fixed selection footer with an independently scrolling image grid; its panel has no outer overflow in the measured fixture.
+- The compact Enhanced card measured 616 px client height and 616 px scroll height, with Upload and Seed visible. Returning to Manual grew it to 716 px without overflow, restored 24 steps and removed the upload control.
+- Preset mode and adaptive-height tests preserve larger saved/user dimensions, including Comfy's extra native widget padding. Package-specific LoRA classes avoid the matching global selectors in the older Suite and standalone LoRA extension.
+- Versioned frontend imports and stylesheet URLs refresh the changed assets. Existing frontend initialization/deprecation warnings from the reference host remain; this release does not claim a warning-free third-party installation.
+
+The images in the QA Gallery are synthetic solid-color fixtures. These checks do not add GPU inference or image-quality coverage.
 
 ## 0.1.3 coexistence and migration
 
@@ -25,8 +39,8 @@ These checks establish registration, UI coexistence and workflow migration. They
 
 | Check | Evidence |
 | --- | --- |
-| Python suite | 99 tests passed with optional real-Comfy CPU tests enabled, including registration coexistence, workflow migration, scoped native progress registry updates and multi-image progress. |
-| JavaScript suite | 64 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment, Comfy change events, progress presentation, job lifecycle handling, native socket geometry, model-file selection and safe workflow migration. |
+| Python suite | 102 tests passed with optional real-Comfy CPU tests enabled, including registration coexistence, workflow migration, scoped native progress registry updates and multi-image progress. |
+| JavaScript suite | 80 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment, Comfy change events, progress presentation, job lifecycle handling, native socket geometry, model-file selection and safe workflow migration. |
 | Node registration | All seven native V3 nodes appear in real `/object_info`. |
 | Runtime choices | Four model profiles, 45 native sampler names and 9 schedulers in the test installation. Extension installations can change these counts. |
 | LoRA loading | Four real CPU comparisons use tiny safetensors, Comfy's file loader, ModelPatcher and LoRA weight calculation. Results match the standard loader and expected low-rank math exactly. |
