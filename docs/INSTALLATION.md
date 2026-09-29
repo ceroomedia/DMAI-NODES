@@ -77,9 +77,29 @@ git -C .\ComfyUI\custom_nodes\DMAI-NODES pull --ff-only
 
 Restart ComfyUI afterward. For ZIP installations, replace package files from the new release while preserving your workflows and output. To uninstall, remove only the custom-node folder after stopping ComfyUI. Saved originals and the gallery index are in `output/DMAI-NODES` and are not removed by package updates.
 
+### Updating from 0.1.2 or earlier
+
+The new Prompter now registers as `DMAINodesPrompter`. Its visible name remains **DMAI Prompter**, under **DMAI NODES**, with the **DMAI-NODES** package badge. Older DMAI Suite and standalone Prompter installations use `DMAIPrompter`; they can remain enabled alongside this package.
+
+To install exactly this release from an existing Git checkout, including a checkout pinned to an older tag, run inside `custom_nodes/DMAI-NODES`:
+
+```bash
+git fetch origin tag v0.1.3
+git checkout v0.1.3
+python -m pip install -r requirements.txt
+git describe --tags --exact-match
+```
+
+Use ComfyUI's Python environment for the dependency command; Windows Portable uses `..\..\..\python_embeded\python.exe` from that node directory. Restart ComfyUI, then hard-refresh the browser with Ctrl+F5.
+
+UI workflows saved by DMAI NODES 0.1.0-0.1.2 are upgraded on load only when their Prompter data and output identify this package. Save the workflow after loading it. Legacy Suite/standalone Prompters keep their original IDs and connections. Ambiguous or damaged records are left for manual correction.
+
+For API JSON sent directly to `/prompt`, use the new `DMAINodesPrompter` class type. The included API helper and offline conversion tool handle identifiable older DMAI NODES API workflows; see [API migration](API.md#prompter-id-migration). The server does not register the conflicting old ID as an alias.
+
 ## Troubleshooting
 
 - **No DMAI nodes:** inspect the ComfyUI console for import errors; check the Python environment and one-level ZIP extraction.
+- **Prompter missing when older DMAI nodes are installed:** update to 0.1.3 or newer, restart ComfyUI and hard-refresh. Search `DMAINodesPrompter` or select **DMAI Prompter** with the **DMAI-NODES** badge. The new node has a `request` output of type `DMAI_PROMPT`.
 - **Missing model:** select the exact catalog entry, including subfolder. Refresh the model list after adding files.
 - **Enhancer unavailable:** install the pinned dependency or choose Clean Base/Manual with `none`.
 - **LoRA has no matching patches:** verify the LoRA family and selected base model; this is deliberately an error.

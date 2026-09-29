@@ -22,10 +22,10 @@ def json_config(value):
     return read_json(value)
 
 
-class DMAIPrompter(io.ComfyNode):
+class DMAINodesPrompter(io.ComfyNode):
     @classmethod
     def define_schema(cls):
-        return io.Schema(node_id="DMAIPrompter",display_name="DMAI Prompter",category="DMAI NODES",
+        return io.Schema(node_id="DMAINodesPrompter",display_name="DMAI Prompter",category="DMAI NODES",
             description="Prompt, dimensions and image count. Optional text input is prepended to local text.",
             inputs=[io.String.Input("config_json",default=json.dumps(DEFAULT_PROMPT),multiline=True,socketless=True),
                     io.String.Input("text",optional=True,force_input=True,advanced=True,tooltip="Optional source text, followed by the local prompt.")],
@@ -139,4 +139,4 @@ class DMAIVAEDecode(io.ComfyNode):
         return io.NodeOutput(VAEDecode().decode(vae,latent)[0])
 
 
-NODE_CLASSES=[DMAIPrompter,DMAILoRAStack,DMAIGenerationEngine,DMAIGallery,DMAIKreaEnhancer,DMAIVAEEncode,DMAIVAEDecode]
+NODE_CLASSES=[DMAINodesPrompter,DMAILoRAStack,DMAIGenerationEngine,DMAIGallery,DMAIKreaEnhancer,DMAIVAEEncode,DMAIVAEDecode]

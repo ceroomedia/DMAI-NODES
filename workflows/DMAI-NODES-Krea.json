@@ -4,7 +4,7 @@
   "nodes": [
     {
       "id": 1,
-      "type": "DMAIPrompter",
+      "type": "DMAINodesPrompter",
       "pos": [
         40,
         100
@@ -34,7 +34,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "DMAIPrompter"
+        "Node name for S&R": "DMAINodesPrompter"
       },
       "widgets_values": [
         "{\"schema_version\": 1, \"prompt\": \"A sculptural object made of dark stone and translucent green glass, soft studio side light.\", \"negative_prompt\": \"\", \"width\": 832, \"height\": 1024, \"count\": 1}"

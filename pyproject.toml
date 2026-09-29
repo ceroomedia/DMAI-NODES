@@ -1,6 +1,6 @@
 [project]
 name = "dmai-nodes"
-version = "0.1.2"
+version = "0.1.3"
 description = "Compact image workflows for ComfyUI: Prompter, ordered LoRAs, Generation Engine and Gallery."
 authors = [{name = "DMAI / ceroomedia"}]
 readme = "README.md"

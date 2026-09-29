@@ -20,7 +20,7 @@ function graph(id, nodes) {
 function entry(id, workflowId = "workflow-a", options = {}) {
   const source = options.source ?? "1", engine = options.engine ?? "3";
   const prompt = {
-    [source]: { class_type: "DMAIPrompter", inputs: { config_json: "{}" } },
+    [source]: { class_type: "DMAINodesPrompter", inputs: { config_json: "{}" } },
     [engine]: { class_type: "DMAIGenerationEngine", inputs: { request: [source, 0] } },
     4: { class_type: "DMAIGallery", inputs: { images: [engine, 0] } },
     ...options.extraNodes,
@@ -62,6 +62,17 @@ test("real batch fractions fill the border and only workflow success reaches 100
   api.emit("execution_success", { prompt_id: "a" });
   assert.equal(last().phase, "complete");
   assert.equal(last().percent, 100);
+});
+
+test("legacy Prompter IDs never receive DMAI NODES progress", async (t) => {
+  const { api, last } = setup(t);
+  const job = entry("legacy");
+  job[2][1].class_type = "DMAIPrompter";
+  api.queue.queue_running = [job];
+  api.emit("execution_start", { prompt_id: "legacy" });
+  progress(api, "legacy", 0.5);
+  await settle();
+  assert.deepEqual(last(), { phase: "idle", percent: 0 });
 });
 
 test("global Run works and unrelated workflow IDs, clients, and engine IDs do not light this node", async (t) => {

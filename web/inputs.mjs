@@ -351,7 +351,7 @@ export class LoRAStack extends Controller {
     list.setAttribute("aria-label", "Ordered LoRA stack");
     let dragged = null;
     this.value.entries.forEach((entry, index) => {
-      const row = el("div", `dmai-lora-row${entry.enabled ? "" : " dmai-off"}`);
+      const row = el("div", `dmai-nodes-lora-row${entry.enabled ? "" : " dmai-off"}`);
       row.dataset.entryId = entry.id;
       const grip = button(`Reorder ${entry.name}; Alt and arrow keys`, "grip");
       grip.classList.add("dmai-grip");
@@ -390,7 +390,7 @@ export class LoRAStack extends Controller {
         dragged = null;
       });
       const copy = el("div", "dmai-lora-copy"),
-        title = el("span", "dmai-lora-name", entry.name.split(/[\\/]/).pop());
+        title = el("span", "dmai-nodes-lora-name", entry.name.split(/[\\/]/).pop());
       title.title = entry.name;
       copy.append(
         title,

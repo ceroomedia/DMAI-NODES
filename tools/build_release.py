@@ -7,7 +7,7 @@ import shutil
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
-VERSION="0.1.2"
+VERSION="0.1.3"
 ROOT_FILES={"__init__.py","README.md","LICENSE","pyproject.toml","requirements.txt","THIRD_PARTY_NOTICES.md","CHANGELOG.md","release.json"}
 DIRECTORIES={"dmai_nodes","web","docs","resources","licenses","workflows"}
 FORBIDDEN={".git","__pycache__",".validation","node_modules","dist"}
@@ -23,7 +23,7 @@ def included_files():
             if path.is_symlink():continue
             parts=path.relative_to(ROOT).parts
             if (len(parts)==1 and parts[0] in ROOT_FILES) or (parts[0] in DIRECTORIES and path.suffix in EXTENSIONS):result.append(path)
-            elif len(parts)==2 and parts[0]=="tools" and path.name in {"run_workflow.py","build_release.py"}:result.append(path)
+            elif len(parts)==2 and parts[0]=="tools" and path.name in {"run_workflow.py","migrate_workflow.py","build_release.py"}:result.append(path)
     return sorted(result,key=lambda item:item.relative_to(ROOT).as_posix())
 
 
@@ -38,7 +38,7 @@ def build():
     path=destination/f"DMAI-NODES-v{VERSION}.zip"
     files=included_files()
     names={item.relative_to(ROOT).as_posix() for item in files}
-    required={"__init__.py","README.md","LICENSE","dmai_nodes/nodes.py","dmai_nodes/engine.py","dmai_nodes/lora.py","dmai_nodes/gallery.py","dmai_nodes/routes.py","web/dmai-nodes.js","requirements.txt","workflows/DMAI-NODES-Krea.json"}
+    required={"__init__.py","README.md","LICENSE","dmai_nodes/nodes.py","dmai_nodes/engine.py","dmai_nodes/lora.py","dmai_nodes/gallery.py","dmai_nodes/routes.py","web/dmai-nodes.js","web/workflow-migration.mjs","tools/migrate_workflow.py","requirements.txt","workflows/DMAI-NODES-Krea.json"}
     missing=required-names
     if missing:raise RuntimeError(f"Missing release files: {missing}")
     with zipfile.ZipFile(path,"w",zipfile.ZIP_DEFLATED,compresslevel=9) as archive:

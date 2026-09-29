@@ -1,3 +1,5 @@
+import { PROMPTER_TYPE } from "./workflow-migration.mjs";
+
 // Job identity comes from the submitted API graph, never the current selection.
 const IDLE = Object.freeze({ phase: "idle", percent: 0 });
 const ACTIVE = new Set(["queued", "loading", "sampling", "decoding", "saving"]);
@@ -35,7 +37,7 @@ function connections(entry) {
     const engine = prompt[engineId], link = engine.inputs?.request;
     if (engine.class_type !== "DMAIGenerationEngine" || !Array.isArray(link)) continue;
     const sourceId = String(link[0]);
-    if (prompt[sourceId]?.class_type !== "DMAIPrompter") continue;
+    if (prompt[sourceId]?.class_type !== PROMPTER_TYPE) continue;
     if (!sources.has(sourceId)) sources.set(sourceId, new Set());
     sources.get(sourceId).add(engineId);
   }

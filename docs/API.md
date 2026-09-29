@@ -24,6 +24,18 @@ In a completed starter job, Gallery metadata is at `history[prompt_id]["outputs"
 
 Use seed strings for the full unsigned 64-bit range; JavaScript numbers cannot represent all of it exactly. Each image's exact seed is recorded in the Engine report. The CLI timeout only stops waiting; it does not cancel the job.
 
+## Prompter ID migration
+
+Version 0.1.3 uses `DMAINodesPrompter` as the Prompter's API `class_type`. The request configuration, `DMAI_PROMPT` output and Engine connections keep the same contracts. Older DMAI packages still own `DMAIPrompter`; the server intentionally has no alias that could overwrite them.
+
+Use the updated starter API files for new integrations. The included `run_workflow.py` converts identifiable 0.1.0-0.1.2 DMAI NODES Prompters in memory before submitting and leaves the source file intact. Direct `/prompt` callers should migrate their template first:
+
+```bash
+python custom_nodes/DMAI-NODES/tools/migrate_workflow.py old-workflow.api.json --output migrated-workflow.api.json
+```
+
+The offline tool also accepts saved UI workflows. It requires a new output path and never replaces the source. Only records matching the new package's configuration and connection contracts are converted. Legacy CLIP/conditioning Prompters and ambiguous records remain unchanged; do not replace every occurrence of `DMAIPrompter` globally. UI workflows loaded in Comfy's frontend are migrated before nodes are created.
+
 ## Generation progress over WebSocket
 
 Connect to ComfyUI's `/ws?clientId=<client ID>` before submitting the workflow. Use the same ID as `client_id` in `POST /prompt`. The Engine sends `dmai_generation_progress` messages to that client through ComfyUI's existing WebSocket:

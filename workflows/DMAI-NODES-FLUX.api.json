@@ -1,6 +1,6 @@
 {
   "1": {
-    "class_type": "DMAIPrompter",
+    "class_type": "DMAINodesPrompter",
     "inputs": {
       "config_json": "{\"schema_version\": 1, \"prompt\": \"A sculptural object made of dark stone and translucent green glass, soft studio side light.\", \"negative_prompt\": \"\", \"width\": 832, \"height\": 1024, \"count\": 1}"
     }

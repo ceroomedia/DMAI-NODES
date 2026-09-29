@@ -14,7 +14,7 @@ tags:
 
 **A compact image workflow for ComfyUI.** Slate surfaces, clean Inter typography and English controls.
 
-**0.1.2 preview** · [GitHub releases](https://github.com/ceroomedia/DMAI-NODES/releases) · [Hugging Face download mirror](https://huggingface.co/ceroomedia/DMAI-NODES)
+**0.1.3 preview** · [GitHub releases](https://github.com/ceroomedia/DMAI-NODES/releases) · [Hugging Face download mirror](https://huggingface.co/ceroomedia/DMAI-NODES)
 
 Prompter → Generation Engine → Gallery, with an ordered LoRA Loader feeding the engine.
 
@@ -43,6 +43,8 @@ python -m pip install -r custom_nodes/DMAI-NODES/requirements.txt
 ```
 
 Restart ComfyUI and refresh the browser. Search for **DMAI** in the node library.
+
+**Using an older DMAI package too?** Version 0.1.3 gives this package's Prompter its own internal ID, `DMAINodesPrompter`. Choose **DMAI Prompter** from the **DMAI-NODES** package in category **DMAI NODES**. The older Suite and standalone Prompter keep their existing IDs. See [updating from 0.1.2](docs/INSTALLATION.md#updating-from-012-or-earlier) for saved workflows and API clients.
 
 - [Windows Portable, local environments and Runpod](docs/INSTALLATION.md)
 - [Model files, presets and enhancement](docs/MODELS.md)

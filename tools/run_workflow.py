@@ -7,6 +7,11 @@ from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 from uuid import uuid4
 
+try:
+    from .migrate_workflow import PROMPTER_ID, migrate_workflow, read_json
+except ImportError:
+    from migrate_workflow import PROMPTER_ID, migrate_workflow, read_json
+
 
 def call(base,path,data=None):
     body=None if data is None else json.dumps(data).encode()
@@ -29,7 +34,11 @@ def main():
     parser.add_argument("--wait",action="store_true")
     parser.add_argument("--timeout",type=int,default=900)
     args=parser.parse_args()
-    workflow=json.loads(args.workflow.read_text(encoding="utf-8"))
+    workflow, migration=migrate_workflow(read_json(args.workflow.read_text(encoding="utf-8-sig")))
+    if migration["migrated"]:
+        print(f"Migrated {len(migration['migrated'])} old DMAI NODES Prompter ID(s) in memory; the file is unchanged.",flush=True)
+    if not isinstance(workflow.get("1"),dict) or workflow["1"].get("class_type") != PROMPTER_ID:
+        parser.error("This runner requires a DMAI NODES starter API workflow with DMAINodesPrompter at node 1. Legacy Suite or ambiguous Prompters are not converted. Export or use an updated starter API workflow.")
     request=json.loads(workflow["1"]["inputs"]["config_json"])
     request.update(prompt=args.prompt,count=args.count)
     workflow["1"]["inputs"]["config_json"]=json.dumps(request)

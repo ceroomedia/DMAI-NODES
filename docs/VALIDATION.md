@@ -1,6 +1,17 @@
-# Validation — 0.1.2 preview
+# Validation — 0.1.3 preview
 
-Checked on 2026-09-28. This release has working ComfyUI registration, CPU contract tests and real local API checks. GPU image generation is still pending.
+Updated on 2026-09-29. This release has working ComfyUI registration, CPU contract tests and real local API checks. GPU image generation is still pending. The coexistence checks below were added for 0.1.3; earlier Gallery, model-picker and connector observations were made on 2026-09-28.
+
+## 0.1.3 coexistence and migration
+
+- Real ComfyUI loader tests load the new extension alongside legacy V1 and Suite-style V3 Prompter fixtures in both orders. Each ID retains its own schema and execution contract. The new extension does not claim `DMAIPrompter`.
+- A running CPU ComfyUI instance loaded the actual older **ComfyUI-DMAI-Suite** and the new package together. `/object_info` contained all seven new nodes and all four Suite nodes. `DMAINodesPrompter` returned `DMAI_PROMPT`; legacy `DMAIPrompter` retained `CONDITIONING, INT, INT, STRING`.
+- In the real Canvas frontend, both Prompters appeared in their separate package categories and rendered their own controls. A saved 0.1.2 DMAI NODES workflow upgraded on load with its five links, 1152x768 dimensions, image count 2, model choices and LoRA strengths intact. A legacy Prompter was added, edited, saved and reloaded alongside it; its original ID and widget format were preserved.
+- JavaScript regressions cover nested serialized subgraphs, named/positional widget formats, invalid or ambiguous signatures, unchanged settings/links and canonical progress tracking. The new frontend mounts only `DMAINodesPrompter`.
+- Eleven Python migration tests cover mixed UI/API graphs, conservative signature checks, invalid links, UTF-8/configuration boundaries, source/output preservation and rejection of legacy nodes before API submission.
+- The new LoRA row/name classes are isolated from the matching selectors found in older DMAI frontend styles.
+
+These checks establish registration, UI coexistence and workflow migration. They do not add GPU inference coverage or certify unrelated third-party extension combinations.
 
 ## Reference environment
 
@@ -14,8 +25,8 @@ Checked on 2026-09-28. This release has working ComfyUI registration, CPU contra
 
 | Check | Evidence |
 | --- | --- |
-| Python suite | 81 tests passed with optional real-Comfy CPU tests enabled, including scoped native progress registry updates and multi-image progress. |
-| JavaScript suite | 53 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment, Comfy change events, progress presentation, job lifecycle handling, native socket geometry and model-file selection. |
+| Python suite | 99 tests passed with optional real-Comfy CPU tests enabled, including registration coexistence, workflow migration, scoped native progress registry updates and multi-image progress. |
+| JavaScript suite | 64 tests passed: dimensions, exact seeds, ordered manifests, strength edits, mode persistence, sampler overrides, ZIP selection, keyboard containment, Comfy change events, progress presentation, job lifecycle handling, native socket geometry, model-file selection and safe workflow migration. |
 | Node registration | All seven native V3 nodes appear in real `/object_info`. |
 | Runtime choices | Four model profiles, 45 native sampler names and 9 schedulers in the test installation. Extension installations can change these counts. |
 | LoRA loading | Four real CPU comparisons use tiny safetensors, Comfy's file loader, ModelPatcher and LoRA weight calculation. Results match the standard loader and expected low-rank math exactly. |

@@ -361,7 +361,7 @@
   gap: 3px;
   margin-bottom: 8px;
 }
-.dmai-nodes .dmai-lora-row {
+.dmai-nodes .dmai-nodes-lora-row {
   display: grid;
   grid-template-columns: 14px minmax(70px, 1fr) 46px 25px 18px 25px;
   align-items: center;
@@ -369,13 +369,13 @@
   min-height: 65px;
   border-bottom: 1px solid var(--dmai-line);
 }
-.dmai-nodes .dmai-lora-row:last-child {
+.dmai-nodes .dmai-nodes-lora-row:last-child {
   border: 0;
 }
 .dmai-nodes .dmai-lora-copy {
   overflow: hidden;
 }
-.dmai-nodes .dmai-lora-name {
+.dmai-nodes .dmai-nodes-lora-name {
   display: block;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -393,10 +393,10 @@
   padding: 7px 3px;
   text-align: center;
 }
-.dmai-nodes .dmai-lora-row > .dmai-icon {
+.dmai-nodes .dmai-nodes-lora-row > .dmai-icon {
   width: 25px;
 }
-.dmai-nodes .dmai-lora-row > .dmai-grip {
+.dmai-nodes .dmai-nodes-lora-row > .dmai-grip {
   width: 14px;
   color: #7d8c81;
   cursor: grab;

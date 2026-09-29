@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3 — 2026-09-29
+
+- Give the new Prompter the unique internal ID `DMAINodesPrompter`, keeping its visible name **DMAI Prompter**. Older DMAI Suite and standalone Prompter installations can keep their original node and frontend hooks.
+- Upgrade identifiable DMAI NODES 0.1.0-0.1.2 UI workflows before loading; preserve legacy Prompters, node IDs, links and settings.
+- Update starter workflows and progress tracking. Add an offline workflow migration tool and migration in the API submission helper, preserving source files.
+- Isolate the new LoRA row and filename CSS classes from the older DMAI LoRA Loader styles.
+
 ## 0.1.2 — 2026-09-28
 
 - Fixed native socket dragging: DOM panels leave real canvas gutters around input and output hit targets. Hidden JSON widgets no longer affect socket spacing.

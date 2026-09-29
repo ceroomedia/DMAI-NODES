@@ -5,10 +5,11 @@ import { Prompter, LoRAStack } from "./inputs.mjs";
 import { Engine } from "./engine.mjs";
 import { Gallery } from "./gallery.mjs";
 import { GenerationProgress } from "./progress.mjs";
+import { PROMPTER_TYPE, migratePreviewPrompters } from "./workflow-migration.mjs";
 
 const controllers = new WeakMap();
 const types = {
-  DMAIPrompter: Prompter,
+  [PROMPTER_TYPE]: Prompter,
   DMAILoRAStack: LoRAStack,
   DMAIGenerationEngine: Engine,
   DMAIGallery: Gallery,
@@ -84,6 +85,7 @@ app.registerExtension({
   },
   nodeCreated: install,
   loadedGraphNode: install,
+  beforeConfigureGraph: migratePreviewPrompters,
   afterConfigureGraph: refreshGraph,
   // Every visible socket is the real Comfy socket. No duplicate connection UI.
 });
